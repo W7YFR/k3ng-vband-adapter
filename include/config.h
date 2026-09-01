@@ -25,6 +25,13 @@
 // channel button gets its own, looser debounce window.
 #define BUTTON_DEBOUNCE_MS 30
 
+// Status LED (led_indicator.cpp). Blink intervals are the on/off
+// duration in each state; MORSE_WPM sets the speed of the one-shot
+// channel-identifier flash played on every join confirmation.
+#define LED_WIFI_DISCONNECTED_BLINK_MS 500
+#define LED_WIFI_CONNECTED_BLINK_MS 250
+#define MORSE_WPM 10
+
 // Over-the-air updates (ArduinoOTA). Hostname is what shows up for
 // `pio run -t upload --upload-port <hostname>.local` / Arduino IDE's
 // network port list. Both values are normally injected at build time

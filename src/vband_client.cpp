@@ -104,3 +104,12 @@ void vbandCycleChannel() {
   Serial.println("Switching to channel " + String(CHANNEL_CYCLE[channelIndex]));
   ws.sendTXT("JC," + String(CHANNEL_CYCLE[channelIndex]));
 }
+
+bool vbandIsJoined() {
+  return joined;
+}
+
+char vbandChannelCode() {
+  if (channelIndex == CHANNEL_CYCLE_COUNT - 1) return 'C'; // custom room
+  return '1' + channelIndex;
+}

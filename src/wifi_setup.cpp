@@ -11,3 +11,7 @@ void wifiConnect() {
   }
   Serial.println("WiFi connected: " + WiFi.localIP().toString());
 }
+
+bool wifiConnected() {
+  return WiFi.status() == WL_CONNECTED;
+}

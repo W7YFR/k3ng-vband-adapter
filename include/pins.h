@@ -10,3 +10,7 @@
 // -- unlike PIN_KEY, this one has no external biasing. Cycles through
 // CHANNEL_CYCLE on each press (see channel_button.cpp and vband_client.cpp).
 #define PIN_CHANNEL_BUTTON 17
+
+// Status LED, active-high through a current-limiting resistor to GND.
+// See led_indicator.cpp for the blink/Morse patterns it drives.
+#define PIN_LED 15
