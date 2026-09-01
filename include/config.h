@@ -1,0 +1,42 @@
+#pragma once
+
+// WiFi is provisioned at runtime by WiFiManager (see setup() in main.cpp),
+// not hardcoded here. On first boot, or whenever it can't reconnect, the
+// board opens an access point named below -- join it from a phone/laptop
+// and a captive portal will ask for your home WiFi's SSID/password, which
+// it then remembers in flash.
+#define WIFI_MANAGER_AP_NAME "VBand-ESP32"
+
+// VBand server (reverse-engineered from hamradio.solutions' websockets.js).
+// Port 7385 is plaintext ws://; 7386 is wss:// and needs a TLS client.
+#define VBAND_HOST "hamradio.solutions"
+#define VBAND_PORT 7385
+#define VBAND_PATH "/"
+#define VBAND_PROTOCOL "lws-hrs-vband2"
+
+// Identity shown to other users, and the channel to join on connect.
+#define VBAND_NAME "JIM-BOB"
+#define VBAND_CHANNEL "tacos"
+
+// Software debounce to prevent jitter
+#define DEBOUNCE_MS 5
+
+// Over-the-air updates (ArduinoOTA). Hostname is what shows up for
+// `pio run -t upload --upload-port <hostname>.local` / Arduino IDE's
+// network port list. Both values are normally injected at build time
+// from .env (see scripts/hydrate_build_flags.py) so the real device
+// hostname/secret never lands in this file; these defaults only apply
+// if .env is missing, which leaves OTA unauthenticated on your local
+// network under the fallback hostname.
+#ifndef OTA_HOSTNAME
+#define OTA_HOSTNAME "vband"
+#endif
+#ifndef OTA_PASSWORD
+#define OTA_PASSWORD ""
+#endif
+
+// The receiving client replays space/mark
+// values in real time, one at a time, in order -- an unclamped space (e.g.
+// idle time since boot before your first keydown) becomes real playback
+// delay for everyone else and backs up everything queued behind it.
+#define MAX_TIME_MS 3000
