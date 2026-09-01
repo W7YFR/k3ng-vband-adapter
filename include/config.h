@@ -21,6 +21,10 @@
 // Software debounce to prevent jitter
 #define DEBOUNCE_MS 5
 
+// Mechanical pushbuttons bounce longer than the keying line does, so the
+// channel button gets its own, looser debounce window.
+#define BUTTON_DEBOUNCE_MS 30
+
 // Over-the-air updates (ArduinoOTA). Hostname is what shows up for
 // `pio run -t upload --upload-port <hostname>.local` / Arduino IDE's
 // network port list. Both values are normally injected at build time

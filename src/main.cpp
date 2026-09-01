@@ -16,6 +16,25 @@ unsigned long keyLastChangeMs = 0;
 unsigned long downStartMs = 0;
 unsigned long lastReleaseMs = 0;
 
+// ---- channel button: non-blocking debounce, fires once per press. ----
+bool buttonLastRaw = false;
+bool buttonState = false;
+unsigned long buttonLastChangeMs = 0;
+
+// Public channels named on the site, plus VBAND_CHANNEL (the custom room)
+// last so a fresh boot's initial join lines up with cycleChannel()'s next
+// index. "Channel 5 (ND)" is the site's actual name, not a typo.
+const char *CHANNEL_CYCLE[] = {
+  "Channel 1",
+  "Channel 2",
+  "Channel 3",
+  "Channel 4",
+  "Channel 5 (ND)",
+  VBAND_CHANNEL,
+};
+const int CHANNEL_CYCLE_COUNT = sizeof(CHANNEL_CYCLE) / sizeof(CHANNEL_CYCLE[0]);
+int channelIndex = CHANNEL_CYCLE_COUNT - 1;
+
 // Splits a comma-separated message into at most maxOut fields.
 int splitFields(const String &msg, String *out, int maxOut) {
   int count = 0;
@@ -41,7 +60,7 @@ void handleMessage(const String &msg) {
   if (cmd == "COK" && n >= 2) {
     myId = fields[1];
     Serial.println("Connected with id " + myId);
-    ws.sendTXT("JC," + String(VBAND_CHANNEL));
+    ws.sendTXT("JC," + String(CHANNEL_CYCLE[channelIndex]));
   } else if (cmd == "CJN" && n >= 2) {
     joined = true;
     Serial.println("Joined channel " + fields[1]);
@@ -104,11 +123,37 @@ void updateKey() {
   }
 }
 
+void cycleChannel() {
+  channelIndex = (channelIndex + 1) % CHANNEL_CYCLE_COUNT;
+  joined = false; // gate SM sends until CJN confirms the new channel
+  Serial.println("Switching to channel " + String(CHANNEL_CYCLE[channelIndex]));
+  ws.sendTXT("JC," + String(CHANNEL_CYCLE[channelIndex]));
+}
+
+void updateChannelButton() {
+  bool raw = digitalRead(PIN_CHANNEL_BUTTON) == LOW;
+  unsigned long now = millis();
+
+  if (raw != buttonLastRaw) {
+    buttonLastRaw = raw;
+    buttonLastChangeMs = now;
+    return;
+  }
+
+  if (raw != buttonState && now - buttonLastChangeMs >= BUTTON_DEBOUNCE_MS) {
+    buttonState = raw;
+    if (buttonState) { // fire on press, not release
+      cycleChannel();
+    }
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   // Keying line has its own external divider biasing it, so no
   // internal pull-up here -- that would skew the divider math.
   pinMode(PIN_KEY, INPUT);
+  pinMode(PIN_CHANNEL_BUTTON, INPUT_PULLUP);
 
   WiFiManager wm;
   if (!wm.autoConnect(WIFI_MANAGER_AP_NAME)) {
@@ -136,5 +181,6 @@ void setup() {
 void loop() {
   ws.loop();
   updateKey();
+  updateChannelButton();
   ArduinoOTA.handle();
 }
