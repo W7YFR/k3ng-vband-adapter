@@ -1,12 +1,8 @@
 #include <Arduino.h>
-#include "wifi_setup.h"
-#include "vband_client.h"
-#include "ota_updater.h"
-#include "keyer.h"
-#include "channel_button.h"
-#include "led_indicator.h"
-#include "sidetone.h"
+#include "config.h"
 #include "power_latch.h"
+#include "vband_app.h"
+#include "circuit_test.h"
 
 void setup() {
   // Do not run any code before powerLatchBegin().
@@ -15,22 +11,17 @@ void setup() {
   powerLatchBegin();
 
   Serial.begin(115200);
-  keyerBegin();
-  channelButtonBegin();
-  ledBegin();
-  sidetoneBegin();
-  vbandSetRxCallback(sidetoneQueueSpaceMark);
-
-  wifiConnect();
-  vbandBegin();
-  otaBegin();
+#ifdef CIRCUIT_TEST
+  circuitTestBegin();
+#else
+  vbandAppBegin();
+#endif
 }
 
 void loop() {
-  vbandLoop();
-  keyerLoop(vbandSendSpaceMark);
-  channelButtonLoop(vbandCycleChannel);
-  ledLoop();
-  sidetoneLoop();
-  otaLoop();
+#ifdef CIRCUIT_TEST
+  circuitTestLoop();
+#else
+  vbandAppLoop();
+#endif
 }
