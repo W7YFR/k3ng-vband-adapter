@@ -2,6 +2,7 @@
 #include <ArduinoOTA.h>
 #include "ota_updater.h"
 #include "config.h"
+#include "power_latch.h"
 
 void otaBegin() {
   ArduinoOTA.setHostname(OTA_HOSTNAME);
@@ -9,7 +10,11 @@ void otaBegin() {
     ArduinoOTA.setPassword(OTA_PASSWORD);
   }
   ArduinoOTA.onStart([]() { Serial.println("OTA update starting"); });
-  ArduinoOTA.onEnd([]() { Serial.println("OTA update complete"); });
+  ArduinoOTA.onEnd([]() {
+    Serial.println("OTA update complete");
+    // ArduinoOTA restarts right after this returns.
+    powerLatchHoldThroughRestart();
+  });
   ArduinoOTA.onError([](ota_error_t error) {
     Serial.println("OTA error [" + String(error) + "]");
   });
