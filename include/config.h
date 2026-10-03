@@ -21,9 +21,12 @@
 #define VBAND_PATH "/"
 #define VBAND_PROTOCOL "lws-hrs-vband2"
 
-// Identity shown to other users, and the channel to join on connect.
-#define VBAND_NAME "JIM-BOB"
-#define VBAND_CHANNEL "tacos"
+// Defaults for the user name and custom room, both editable in the WiFi
+// config portal and persisted in NVS (see vband_settings.cpp). The name
+// gets a random number appended once, on first boot.
+#define VBAND_DEFAULT_NAME_PREFIX "jim-bob-"
+#define VBAND_DEFAULT_ROOM "tacos"
+#define VBAND_SETTING_MAX_LEN 32
 
 // CIRCUIT_TEST (power latch bench test, see circuit_test.cpp)
 // When set, the board still connects to WiFi

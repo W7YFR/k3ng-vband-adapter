@@ -21,7 +21,7 @@ bool vbandIsJoined();
 
 // Single-character identifier for the current CHANNEL_CYCLE position,
 // for the status LED's Morse announcement: '1'-'5' for the numbered
-// channels, 'C' for the custom room (VBAND_CHANNEL).
+// channels, 'C' for the custom room (vbandSettingsRoom()).
 char vbandChannelCode();
 
 // Registers a callback invoked once per inbound SMK from someone else in

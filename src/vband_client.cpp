@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <WebSocketsClient.h>
 #include "vband_client.h"
+#include "vband_settings.h"
 #include "config.h"
 
 namespace {
@@ -10,14 +11,21 @@ bool joined = false;
 String myId;
 VbandRxSpaceMarkCallback rxCallback = nullptr;
 
-// Public channels named on the site, plus VBAND_CHANNEL (the custom room)
-// last so a fresh boot's initial join lines up with vbandCycleChannel()'s
-// next index. "Channel 5 (ND)" is the site's actual name, not a typo.
-const char *CHANNEL_CYCLE[] = {
-    "Channel 1", "Channel 2", "Channel 3", "Channel 4", "Channel 5 (ND)", VBAND_CHANNEL,
+// Public channels named on the site, followed by the custom room
+// (vbandSettingsRoom()) as the last cycle position so a fresh boot's
+// initial join lines up with vbandCycleChannel()'s next index.
+// "Channel 5 (ND)" is the site's actual name, not a typo.
+const char *PUBLIC_CHANNELS[] = {
+    "Channel 1", "Channel 2", "Channel 3", "Channel 4", "Channel 5 (ND)",
 };
-const int CHANNEL_CYCLE_COUNT = sizeof(CHANNEL_CYCLE) / sizeof(CHANNEL_CYCLE[0]);
+const int PUBLIC_CHANNEL_COUNT = sizeof(PUBLIC_CHANNELS) / sizeof(PUBLIC_CHANNELS[0]);
+const int CHANNEL_CYCLE_COUNT = PUBLIC_CHANNEL_COUNT + 1;
 int channelIndex = CHANNEL_CYCLE_COUNT - 1;
+
+String currentChannel() {
+  if (channelIndex < PUBLIC_CHANNEL_COUNT) return PUBLIC_CHANNELS[channelIndex];
+  return vbandSettingsRoom();
+}
 
 // Splits a comma-separated message into at most maxOut fields.
 int splitFields(const String &msg, String *out, int maxOut) {
@@ -44,7 +52,7 @@ void handleMessage(const String &msg) {
   if (cmd == "COK" && n >= 2) {
     myId = fields[1];
     Serial.println("Connected with id " + myId);
-    ws.sendTXT("JC," + String(CHANNEL_CYCLE[channelIndex]));
+    ws.sendTXT("JC," + currentChannel());
   } else if (cmd == "CJN" && n >= 2) {
     joined = true;
     Serial.println("Joined channel " + fields[1]);
@@ -67,7 +75,7 @@ void onWsEvent(WStype_t type, uint8_t *payload, size_t length) {
   switch (type) {
     case WStype_CONNECTED:
       Serial.println("WS connected");
-      ws.sendTXT("CN," + String(VBAND_NAME) + ",0,VB 2.0");
+      ws.sendTXT("CN," + vbandSettingsName() + ",0,VB 2.0");
       break;
     case WStype_DISCONNECTED:
       Serial.println("WS disconnected");
@@ -105,8 +113,8 @@ void vbandSendSpaceMark(unsigned long space, unsigned long mark) {
 void vbandCycleChannel() {
   channelIndex = (channelIndex + 1) % CHANNEL_CYCLE_COUNT;
   joined = false; // gate SM sends until CJN confirms the new channel
-  Serial.println("Switching to channel " + String(CHANNEL_CYCLE[channelIndex]));
-  ws.sendTXT("JC," + String(CHANNEL_CYCLE[channelIndex]));
+  Serial.println("Switching to channel " + currentChannel());
+  ws.sendTXT("JC," + currentChannel());
 }
 
 bool vbandIsJoined() {
