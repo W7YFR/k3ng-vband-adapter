@@ -7,9 +7,50 @@ Standalone ESP32 client for [VBand](https://hamradio.solutions/vband/): keys ove
 | Signal | GPIO | Notes |
 |---|---|---|
 | Keying line | 16 | Plain `INPUT`, externally biased through a voltage divider -- see `pins.h` |
-| Channel button | 17 | `INPUT_PULLUP`, momentary switch to GND |
+| Channel button | 17 | `INPUT_PULLUP`; same physical button that engages the power latch -- see power latch diagram below |
 | Status LED | 15 | Active-high, through a current-limiting resistor to GND |
+| Power latch (hold) | 4 | Output -- see power latch diagram below |
 | Sidetone audio out | 25 | Built-in DAC1 output -- see wiring below |
+
+## Soft power latch
+
+There's a single physical pushbutton in this build, and it does triple duty. A P-channel MOSFET switches the board's supply; pressing the button pulls its gate low, which is what first powers the board on. `PIN_POWER_LATCH` then takes over holding the gate low once firmware is running (see `power_latch.cpp`), so the button can be released. That same button is also `PIN_CHANNEL_BUTTON` -- wired through a protection diode so the circuit's ~5V gate node can't reach that 3.3V-only pin -- which is how it cycles channels in software (`channel_button.cpp`).
+
+**Parts:** M1 = IRF5305 (P-channel MOSFET), Q1 = 2N2222A (NPN BJT), D1/D2 = 1N4148, SW1 = the single momentary pushbutton. R1 = 1MΩ, R2 = 10kΩ, R3 = 1MΩ.
+
+```
+5V raw ───────●─────────────────────────────┐
+              │                             │ source
+           [R1 1M]                        ┌─┴─┐
+              │                     gate  │M1 │  IRF5305 (P-ch MOSFET)
+              ●─────────────●─────────────┤   │
+              │             │             └─┬─┘
+              │ collector   │               │ drain
+            ┌─┴─┐           ▼  D1           └────►  ESP32 5V pin (switched)
+   ┌────────┤Q1 │          ─┬─
+   │   base └─┬─┘           │
+   │          │ emitter     │
+   │         GND            │
+   │                        │
+   │                     SW ●──────────┐
+   │                        │          │
+   │                      [SW1]       ─┴─
+   │                    pushbutton     ▲  D2
+   │                        │          │
+   │                       GND      GPIO17  PIN_CHANNEL_BUTTON (INPUT_PULLUP)
+   │
+   ●───[R2 10k]─── GPIO4  PIN_POWER_LATCH
+   │
+[R3 1M]
+   │
+  GND
+```
+
+`●` marks every point where three wires join; plain corners have no dot. Each diode is drawn as a triangle pointing at a bar -- the bar is the striped (cathode) end. Both D1's and D2's stripes face the `SW` node: D1's anode is on M1's gate, D2's anode is on GPIO17.
+
+Driving `PIN_POWER_LATCH` HIGH turns on Q1, which pulls M1's gate to near GND, turning M1 on and powering the board -- that's the hold. Pressing SW1 does the same thing to the gate through D1, which is what gets the board powered up in the first place, before firmware is even running; R1 is what keeps M1 off (gate pulled to 5V) when neither the button nor Q1 is active. D2 lets `PIN_CHANNEL_BUTTON` read that same press directly (LOW while held) without ever seeing more than a diode drop above GND -- the gate and `SW` can sit near the raw 5V rail, well above what a 3.3V-only ESP32 pin can tolerate.
+
+Check your actual parts' datasheets for lead order (E/B/C, G/D/S) -- this gives logical connections, not physical pinout.
 
 ## Feeding the sidetone audio into your amp
 
