@@ -89,3 +89,5 @@ Turning P3 down shifts more of the AC signal to the grounded leg instead of on t
 pio run -e wemos_d1_mini32 -t upload       # USB
 pio run -e wemos_d1_mini32_ota -t upload   # OTA -- see scripts/README.md for .env setup
 ```
+
+The `VBand-ESP32` setup hotspot's password defaults to `w7yfr-vband`; override it with `WIFI_MANAGER_AP_PASSWORD` in `.env` (8+ characters).

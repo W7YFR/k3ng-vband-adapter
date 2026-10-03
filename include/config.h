@@ -1,11 +1,18 @@
 #pragma once
 
-// WiFi is provisioned at runtime by WiFiManager (see setup() in main.cpp),
+// WiFi is provisioned at runtime by WiFiManager (see wifi_setup.cpp),
 // not hardcoded here. On first boot, or whenever it can't reconnect, the
 // board opens an access point named below -- join it from a phone/laptop
 // and a captive portal will ask for your home WiFi's SSID/password, which
 // it then remembers in flash.
 #define WIFI_MANAGER_AP_NAME "VBand-ESP32"
+
+// Password for joining that access point (WPA2, so 8+ characters --
+// enforced in wifi_setup.cpp). Override with WIFI_MANAGER_AP_PASSWORD in
+// .env, which is injected at build time like the OTA values below.
+#ifndef WIFI_MANAGER_AP_PASSWORD
+#define WIFI_MANAGER_AP_PASSWORD "w7yfr-vband"
+#endif
 
 // VBand server (reverse-engineered from hamradio.solutions' websockets.js).
 // Port 7385 is plaintext ws://; 7386 is wss:// and needs a TLS client.
