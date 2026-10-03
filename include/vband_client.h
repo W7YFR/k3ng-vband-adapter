@@ -23,3 +23,10 @@ bool vbandIsJoined();
 // for the status LED's Morse announcement: '1'-'5' for the numbered
 // channels, 'C' for the custom room (VBAND_CHANNEL).
 char vbandChannelCode();
+
+// Registers a callback invoked once per inbound SMK from someone else in
+// the channel (never for this device's own keying), with that
+// transmission's original space/mark timing -- e.g. to play it back as
+// audio. Call once from setup(); pass nullptr to clear it.
+typedef void (*VbandRxSpaceMarkCallback)(unsigned long space, unsigned long mark);
+void vbandSetRxCallback(VbandRxSpaceMarkCallback callback);

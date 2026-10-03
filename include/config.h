@@ -32,6 +32,17 @@
 #define LED_WIFI_CONNECTED_BLINK_MS 250
 #define MORSE_WPM 10
 
+// Sidetone audio (sidetone.cpp): pitch of the synthesized tone for
+// incoming code and the DAC sample rate it's synthesized at (a clean
+// divisor of 1,000,000 so the sample timer's period is a whole number
+// of microseconds). AUDIO_QUEUE_CAPACITY caps how many received
+// space/mark pairs can be buffered awaiting playback -- if playback
+// ever falls behind arrival, the oldest queued pair is dropped rather
+// than growing unbounded.
+#define AUDIO_TONE_HZ 700
+#define AUDIO_SAMPLE_RATE_HZ 40000
+#define AUDIO_QUEUE_CAPACITY 32
+
 // Over-the-air updates (ArduinoOTA). Hostname is what shows up for
 // `pio run -t upload --upload-port <hostname>.local` / Arduino IDE's
 // network port list. Both values are normally injected at build time

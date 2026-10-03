@@ -14,3 +14,15 @@
 // Status LED, active-high through a current-limiting resistor to GND.
 // See led_indicator.cpp for the blink/Morse patterns it drives.
 #define PIN_LED 15
+
+// Sidetone audio out -- one of the ESP32's two built-in 8-bit DACs
+// (GPIO25/DAC1, GPIO26/DAC2 are the only two valid pins for dacWrite()).
+// Feeds into the same amplifier/speaker circuit the existing keyer's own
+// sidetone output drives -- not into the keyer port/pin. Idles at ~1.65V
+// (mid-scale); AC-couple through a series capacitor so that DC bias
+// doesn't reach the amp, and sum the two sources into the amp's input
+// through separate resistors (don't tie the two outputs directly
+// together) so neither one loads or fights the other. Also pad down
+// with that summing resistor since DAC full-scale (3.3V) will be far
+// hotter than a typical sidetone line level. See sidetone.cpp.
+#define PIN_AUDIO_OUT 25

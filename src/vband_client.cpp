@@ -8,6 +8,7 @@ namespace {
 WebSocketsClient ws;
 bool joined = false;
 String myId;
+VbandRxSpaceMarkCallback rxCallback = nullptr;
 
 // Public channels named on the site, plus VBAND_CHANNEL (the custom room)
 // last so a fresh boot's initial join lines up with vbandCycleChannel()'s
@@ -55,6 +56,9 @@ void handleMessage(const String &msg) {
     // decoder.js's Morse decoder; for now just log the numbers.
     if (fields[2] != myId) {
       Serial.println("RX " + fields[3] + " space=" + fields[4] + " mark=" + fields[5]);
+      if (rxCallback) {
+        rxCallback(fields[4].toInt(), fields[5].toInt());
+      }
     }
   }
 }
@@ -112,4 +116,8 @@ bool vbandIsJoined() {
 char vbandChannelCode() {
   if (channelIndex == CHANNEL_CYCLE_COUNT - 1) return 'C'; // custom room
   return '1' + channelIndex;
+}
+
+void vbandSetRxCallback(VbandRxSpaceMarkCallback callback) {
+  rxCallback = callback;
 }
