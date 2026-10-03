@@ -36,14 +36,23 @@ void stopPortalBlink() {
 
 // True if the button (still held from powering on) stays held until
 // PORTAL_HOLD_MS after boot. Returns as soon as it's released, so a
-// normal press-and-let-go boot isn't delayed.
+// normal press-and-let-go boot isn't delayed. Lights the LED while the
+// power-on press is held, as a "booted" signal; it goes off on release,
+// or the portal blink takes over if the hold reaches PORTAL_HOLD_MS.
 bool portalRequestedAtBoot() {
   pinMode(PIN_CHANNEL_BUTTON, INPUT_PULLUP);
+  pinMode(PIN_LED, OUTPUT);
+  if (digitalRead(PIN_CHANNEL_BUTTON) == HIGH) return false;
+
+  digitalWrite(PIN_LED, HIGH);
   while (millis() < PORTAL_HOLD_MS) {
-    if (digitalRead(PIN_CHANNEL_BUTTON) == HIGH) return false;
+    if (digitalRead(PIN_CHANNEL_BUTTON) == HIGH) {
+      digitalWrite(PIN_LED, LOW);
+      return false;
+    }
     delay(10);
   }
-  return digitalRead(PIN_CHANNEL_BUTTON) == LOW;
+  return true;
 }
 
 }  // namespace
