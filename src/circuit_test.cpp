@@ -3,6 +3,7 @@
 #include "debounced_input.h"
 #include "wifi_setup.h"
 #include "ota_updater.h"
+#include "power_latch.h"
 #include "pins.h"
 #include "config.h"
 
@@ -22,7 +23,7 @@ void circuitTestBegin() {
 }
 
 void circuitTestLoop() {
-  if (button.update()) {
+  if (button.update() && !powerOffPending()) {
     digitalWrite(PIN_LED, button.activeNow() ? HIGH : LOW);
   }
   otaLoop();

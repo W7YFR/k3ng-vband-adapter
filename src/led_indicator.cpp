@@ -2,6 +2,7 @@
 #include "led_indicator.h"
 #include "wifi_setup.h"
 #include "vband_client.h"
+#include "power_latch.h"
 #include "pins.h"
 #include "config.h"
 
@@ -96,6 +97,8 @@ void ledBegin() {
 }
 
 void ledLoop() {
+  if (powerOffPending()) return;  // power_latch.cpp owns the LED now
+
   bool wifiUp = wifiConnected();
   bool joinedNow = wifiUp && vbandIsJoined();
 

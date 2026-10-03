@@ -11,6 +11,7 @@ void setup() {
   powerLatchBegin();
 
   Serial.begin(115200);
+  powerOffButtonBegin();
 #ifdef CIRCUIT_TEST
   circuitTestBegin();
 #else

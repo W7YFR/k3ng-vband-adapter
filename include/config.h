@@ -39,6 +39,12 @@
 // channel button gets its own, looser debounce window.
 #define BUTTON_DEBOUNCE_MS 30
 
+// Holding the button this long powers the board off (power_latch.cpp);
+// the LED then flashes at POWER_OFF_FLASH_MS on/off until the button is
+// released and power drops.
+#define POWER_OFF_HOLD_MS 3000
+#define POWER_OFF_FLASH_MS 100
+
 // Status LED (led_indicator.cpp). Blink intervals are the on/off
 // duration in each state; MORSE_WPM sets the speed of the one-shot
 // channel-identifier flash played on every join confirmation.
