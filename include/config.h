@@ -89,14 +89,17 @@
 #define OTA_PASSWORD ""
 #endif
 
-// OTA LED patterns (ota_updater.cpp): a fast flicker at
+// Success flash (led_patterns.cpp): LED_SUCCESS_FLASH_COUNT flashes of
+// LED_SUCCESS_FLASH_MS on/off, shown when WiFi connects at boot and right
+// before the reboot after a successful OTA upload.
+#define LED_SUCCESS_FLASH_COUNT 3
+#define LED_SUCCESS_FLASH_MS 150
+
+// Other OTA LED patterns (ota_updater.cpp): a fast flicker at
 // OTA_PROGRESS_FLASH_MS on/off while the upload is in progress (it freezes
-// if the upload stalls); on success, OTA_SUCCESS_FLASH_COUNT flashes of
-// OTA_SUCCESS_FLASH_MS on/off right before the reboot; on failure, one
-// long OTA_FAILURE_FLASH_MS flash, after which the old firmware carries on.
+// if the upload stalls); on failure, one long OTA_FAILURE_FLASH_MS flash,
+// after which the old firmware carries on.
 #define OTA_PROGRESS_FLASH_MS 50
-#define OTA_SUCCESS_FLASH_COUNT 3
-#define OTA_SUCCESS_FLASH_MS 150
 #define OTA_FAILURE_FLASH_MS 1000
 
 // The receiving client replays space/mark

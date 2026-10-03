@@ -4,6 +4,7 @@
 #include "wifi_setup.h"
 #include "vband_settings.h"
 #include "power_latch.h"
+#include "led_patterns.h"
 #include "pins.h"
 #include "config.h"
 
@@ -95,6 +96,7 @@ void wifiConnect() {
     ESP.restart();
   }
   Serial.println("WiFi connected: " + WiFi.localIP().toString());
+  ledFlashSuccess();
 }
 
 bool wifiConnected() {

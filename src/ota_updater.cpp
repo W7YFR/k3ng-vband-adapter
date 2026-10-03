@@ -3,6 +3,7 @@
 #include "ota_updater.h"
 #include "config.h"
 #include "power_latch.h"
+#include "led_patterns.h"
 #include "pins.h"
 
 namespace {
@@ -26,16 +27,6 @@ void flickerOtaProgress() {
   lastProgressToggleMs = now;
   progressLedOn = !progressLedOn;
   setLed(progressLedOn);
-}
-
-// Short burst so a successful upload is visible before the reboot.
-void flashOtaSuccess() {
-  for (int i = 0; i < OTA_SUCCESS_FLASH_COUNT; i++) {
-    setLed(true);
-    delay(OTA_SUCCESS_FLASH_MS);
-    setLed(false);
-    delay(OTA_SUCCESS_FLASH_MS);
-  }
 }
 
 // One long flash so a failed upload looks different from success. The
@@ -67,7 +58,7 @@ void otaBegin() {
     // already been sent its OK, so the flash doesn't hold it up).
     powerLatchHoldThroughRestart();
     setLed(false);
-    flashOtaSuccess();
+    ledFlashSuccess();  // visible before the reboot
   });
   ArduinoOTA.onError([](ota_error_t error) {
     Serial.println("OTA error [" + String(error) + "]");
