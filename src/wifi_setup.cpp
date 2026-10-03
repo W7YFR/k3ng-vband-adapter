@@ -12,33 +12,37 @@ static_assert(sizeof(WIFI_MANAGER_AP_PASSWORD) - 1 >= 8,
 
 namespace {
 
-// loop() doesn't run while the portal blocks, so the portal's LED blink
-// runs off a timer instead of led_indicator.cpp.
-Ticker portalBlink;
-bool portalLedOn = false;
+// loop() doesn't run while wifiConnect() blocks, so its LED blinks
+// (connecting, portal open) run off a timer instead of led_indicator.cpp.
+Ticker blinkTicker;
+bool blinkLedOn = false;
 
-void togglePortalLed() {
+void toggleBlinkLed() {
   if (powerOffPending()) return;  // power_latch.cpp owns the LED now
-  portalLedOn = !portalLedOn;
-  digitalWrite(PIN_LED, portalLedOn ? HIGH : LOW);
+  blinkLedOn = !blinkLedOn;
+  digitalWrite(PIN_LED, blinkLedOn ? HIGH : LOW);
 }
 
-void startPortalBlink() {
+// Starts (or switches to) blinking at intervalMs, from LED off.
+void startBlink(unsigned long intervalMs) {
+  blinkTicker.detach();
   pinMode(PIN_LED, OUTPUT);
-  portalBlink.attach_ms(LED_PORTAL_BLINK_MS, togglePortalLed);
+  blinkLedOn = false;
+  if (!powerOffPending()) digitalWrite(PIN_LED, LOW);
+  blinkTicker.attach_ms(intervalMs, toggleBlinkLed);
 }
 
-void stopPortalBlink() {
-  portalBlink.detach();
-  portalLedOn = false;
+void stopBlink() {
+  blinkTicker.detach();
+  blinkLedOn = false;
   if (!powerOffPending()) digitalWrite(PIN_LED, LOW);
 }
 
 // True if the button (still held from powering on) stays held until
 // PORTAL_HOLD_MS after boot. Returns as soon as it's released, so a
 // normal press-and-let-go boot isn't delayed. Lights the LED while the
-// power-on press is held, as a "booted" signal; it goes off on release,
-// or the portal blink takes over if the hold reaches PORTAL_HOLD_MS.
+// power-on press is held, as a "booted" signal; on release the connecting
+// blink takes over, or the portal blink if the hold reaches PORTAL_HOLD_MS.
 bool portalRequestedAtBoot() {
   pinMode(PIN_CHANNEL_BUTTON, INPUT_PULLUP);
   pinMode(PIN_LED, OUTPUT);
@@ -71,7 +75,7 @@ void wifiConnect() {
   wm.setSaveParamsCallback([&]() {
     vbandSettingsSave(nameParam.getValue(), roomParam.getValue());
   });
-  wm.setAPCallback([](WiFiManager *) { startPortalBlink(); });
+  wm.setAPCallback([](WiFiManager *) { startBlink(LED_PORTAL_BLINK_MS); });
 
   bool connected = false;
   if (portalRequestedAtBoot()) {
@@ -80,9 +84,11 @@ void wifiConnect() {
     // Exited without saving: carry on with whatever WiFi is already saved.
   }
   if (!connected) {
+    // Switches to the portal blink via the AP callback if it can't connect.
+    startBlink(LED_WIFI_CONNECTING_BLINK_MS);
     connected = wm.autoConnect(WIFI_MANAGER_AP_NAME, WIFI_MANAGER_AP_PASSWORD);
   }
-  stopPortalBlink();
+  stopBlink();
 
   if (!connected) {
     Serial.println("WiFi provisioning failed, restarting");

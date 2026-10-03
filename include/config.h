@@ -16,9 +16,12 @@
 
 // Keep holding the power-on press this long after boot to open the config
 // portal even when WiFi is already set up (e.g. to change the VBand name
-// or room). The LED blinks at LED_PORTAL_BLINK_MS on/off while it's open.
+// or room). While booting, the LED is solid as long as that press is held,
+// then blinks at LED_WIFI_CONNECTING_BLINK_MS on/off while connecting to
+// WiFi, or LED_PORTAL_BLINK_MS while the portal is open.
 #define PORTAL_HOLD_MS 3000
-#define LED_PORTAL_BLINK_MS 500
+#define LED_WIFI_CONNECTING_BLINK_MS 500
+#define LED_PORTAL_BLINK_MS 1000
 
 // VBand server (reverse-engineered from hamradio.solutions' websockets.js).
 // Port 7385 is plaintext ws://; 7386 is wss:// and needs a TLS client.
