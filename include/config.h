@@ -19,7 +19,7 @@
 // or room). While booting, the LED is solid as long as that press is held,
 // then blinks at LED_WIFI_CONNECTING_BLINK_MS on/off while connecting to
 // WiFi, or LED_PORTAL_BLINK_MS while the portal is open.
-#define PORTAL_HOLD_MS 3000
+#define PORTAL_HOLD_MS 2000
 #define LED_WIFI_CONNECTING_BLINK_MS 500
 #define LED_PORTAL_BLINK_MS 1000
 
@@ -54,7 +54,7 @@
 // Holding the button this long powers the board off (power_latch.cpp);
 // the LED then flashes at POWER_OFF_FLASH_MS on/off until the button is
 // released and power drops.
-#define POWER_OFF_HOLD_MS 3000
+#define POWER_OFF_HOLD_MS 2000
 #define POWER_OFF_FLASH_MS 100
 
 // Status LED (led_indicator.cpp). Blink intervals are the on/off
