@@ -18,9 +18,11 @@
 #define VBAND_NAME "JIM-BOB"
 #define VBAND_CHANNEL "tacos"
 
-// Power latch bench test (circuit_test.cpp): when defined, the board still
-// connects to WiFi and accepts OTA updates, but never joins VBand -- the
-// button just lights the LED while held. Comment out for normal operation.
+// CIRCUIT_TEST (power latch bench test, see circuit_test.cpp)
+// When set, the board still connects to WiFi
+// and accepts OTA updates, but never joins VBand.
+// The button lights the LED while held.
+// Run `pio run -e circuit_test -t upload` or set the define below:
 // #define CIRCUIT_TEST
 
 // Software debounce to prevent jitter
