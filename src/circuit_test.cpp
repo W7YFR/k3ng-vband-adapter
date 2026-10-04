@@ -66,6 +66,9 @@ void circuitTestBegin() {
   digitalWrite(PIN_LED, LOW);
 
   megaLinkBegin(); // before wifiConnect(), which blocks
+  // Never joins VBand, but claims it's ready so the keyer moves keying to
+  // the VBand key line and that line can be tested.
+  megaLinkSetVbandReady(true);
   wifiConnect();
   otaBegin();
 }

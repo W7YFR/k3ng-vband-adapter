@@ -8,6 +8,7 @@ namespace {
 
 WebSocketsClient ws;
 bool joined = false;
+bool ready = false;
 String myId;
 VbandRxSpaceMarkCallback rxCallback = nullptr;
 
@@ -55,6 +56,7 @@ void handleMessage(const String &msg) {
     ws.sendTXT("JC," + currentChannel());
   } else if (cmd == "CJN" && n >= 2) {
     joined = true;
+    ready = true;
     Serial.println("Joined channel " + fields[1]);
   } else if (cmd == "CNF" && n >= 2) {
     Serial.println("Server connection failure: " + fields[1]);
@@ -80,6 +82,7 @@ void onWsEvent(WStype_t type, uint8_t *payload, size_t length) {
     case WStype_DISCONNECTED:
       Serial.println("WS disconnected");
       joined = false;
+      ready = false;
       break;
     case WStype_TEXT: {
       String msg((char *)payload, length);
@@ -119,6 +122,10 @@ void vbandCycleChannel() {
 
 bool vbandIsJoined() {
   return joined;
+}
+
+bool vbandIsReady() {
+  return ready;
 }
 
 char vbandChannelCode() {

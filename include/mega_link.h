@@ -25,5 +25,11 @@ bool megaLinkUp();
 // evenIfDown sends it while the link is down too (bench testing).
 bool megaLinkSend(const String &type, const String &fields, bool evenIfDown = false);
 
+// Tells the keyer whether VBand is usable right now, as "VB,1" / "VB,0".
+// Sent on every change and again with every heartbeat, so the keyer
+// catches up even if a frame was lost. The keyer only moves keying to
+// VBand while this is true.
+void megaLinkSetVbandReady(bool ready);
+
 // Called for every valid frame from the keyer other than HI.
 void megaLinkSetFrameCallback(MegaLinkFrameCallback callback);

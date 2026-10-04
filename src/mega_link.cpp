@@ -10,6 +10,7 @@ HardwareSerial &megaSerial = Serial2;
 MegaLinkFrameCallback frameCallback = nullptr;
 
 bool linkUp = false;
+bool vbandReady = false;
 unsigned long lastFrameMs = 0;
 unsigned long lastHiMs = 0;
 
@@ -43,8 +44,13 @@ bool sendFrame(const String &body) {
   return true;
 }
 
+void sendVbandReady() {
+  sendFrame(vbandReady ? "VB,1" : "VB,0");
+}
+
 void sendHi() {
   sendFrame("HI," MEGA_LINK_PROTOCOL_VERSION);
+  sendVbandReady();
   lastHiMs = millis();
 }
 
@@ -124,6 +130,12 @@ bool megaLinkUp() {
 bool megaLinkSend(const String &type, const String &fields, bool evenIfDown) {
   if (!linkUp && !evenIfDown) return false;
   return sendFrame(fields.length() ? type + "," + fields : type);
+}
+
+void megaLinkSetVbandReady(bool ready) {
+  if (ready == vbandReady) return;
+  vbandReady = ready;
+  if (linkUp) sendVbandReady();
 }
 
 void megaLinkSetFrameCallback(MegaLinkFrameCallback callback) {

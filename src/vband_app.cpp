@@ -24,6 +24,7 @@ void vbandAppBegin() {
 
 void vbandAppLoop() {
   vbandLoop();
+  megaLinkSetVbandReady(vbandIsReady());
   megaLinkLoop();
   keyerLoop(vbandSendSpaceMark);
   channelButtonLoop(vbandCycleChannel);

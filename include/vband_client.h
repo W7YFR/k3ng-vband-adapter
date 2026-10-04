@@ -19,6 +19,12 @@ void vbandCycleChannel();
 // (including on vbandCycleChannel()) until that confirmation arrives.
 bool vbandIsJoined();
 
+// True from the first join confirmation after connecting until the
+// WebSocket disconnects. Unlike vbandIsJoined(), it stays true while
+// switching channels, so a channel change doesn't look like VBand going
+// away and back (the keyer would otherwise flip between key lines).
+bool vbandIsReady();
+
 // Single-character identifier for the current CHANNEL_CYCLE position,
 // for the status LED's Morse announcement: '1'-'5' for the numbered
 // channels, 'C' for the custom room (vbandSettingsRoom()).

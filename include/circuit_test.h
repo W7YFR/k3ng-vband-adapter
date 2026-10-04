@@ -7,6 +7,7 @@
 // heard from; key transitions are logged to Serial. Each
 // button press sends the keyer the next of a few test status screens
 // (see circuit_test.cpp). Still connects to WiFi and accepts OTA
-// updates, but never joins VBand.
+// updates, but never joins VBand -- it tells the keyer VBand is ready
+// anyway, so the keyer switches to the VBand key line for testing.
 void circuitTestBegin();
 void circuitTestLoop();
