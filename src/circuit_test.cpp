@@ -15,6 +15,11 @@ DebouncedInput key(PIN_KEY, DEBOUNCE_MS, KEY_ACTIVE_HIGH);
 
 unsigned long keyDownMs = 0;
 
+// With the LED otherwise idle, it blinks at this on/off interval while
+// nothing has been heard from the keyer, so the link's keyer -> ESP32
+// direction can be checked without a serial monitor.
+const unsigned long LINK_DOWN_BLINK_MS = 500;
+
 // Status screens sent to the keyer, one per button press, in turn. Each
 // checks something different about how it lays out "ST" frames on its
 // 18 x 4 display: all four rows, centering, a row exactly the display's
@@ -28,19 +33,28 @@ const char *TEST_SCREENS[] = {
 const int TEST_SCREEN_COUNT = sizeof(TEST_SCREENS) / sizeof(TEST_SCREENS[0]);
 int nextTestScreen = 0;
 
+// Sent even while we haven't heard from the keyer: the keyer only needs
+// the ESP32 -> keyer direction to show it.
 void sendNextTestScreen() {
-  if (!megaLinkUp()) {
-    Serial.println("Keyer link down, test screen not sent");
-    return;
-  }
   const char *screen = TEST_SCREENS[nextTestScreen];
-  bool sent = megaLinkSend("ST", screen);
-  Serial.printf("Test screen %d %s: %s\n", nextTestScreen + 1, sent ? "sent" : "dropped", screen);
+  bool sent = megaLinkSend("ST", screen, true);
+  Serial.printf("Test screen %d %s (link %s): %s\n", nextTestScreen + 1,
+                sent ? "sent" : "dropped", megaLinkUp() ? "up" : "down", screen);
   nextTestScreen = (nextTestScreen + 1) % TEST_SCREEN_COUNT;
 }
 
+// On while the button is held or the key line is active; otherwise a
+// slow blink while the keyer hasn't been heard from, off once it has.
 void updateLed() {
-  digitalWrite(PIN_LED, (button.activeNow() || key.activeNow()) ? HIGH : LOW);
+  bool on;
+  if (button.activeNow() || key.activeNow()) {
+    on = true;
+  } else if (!megaLinkUp()) {
+    on = (millis() / LINK_DOWN_BLINK_MS) % 2;
+  } else {
+    on = false;
+  }
+  digitalWrite(PIN_LED, on ? HIGH : LOW);
 }
 
 }  // namespace
@@ -59,20 +73,20 @@ void circuitTestBegin() {
 void circuitTestLoop() {
   megaLinkLoop();
 
-  if (button.update() && !powerOffPending()) {
-    if (button.activeNow()) sendNextTestScreen();
-    updateLed();
+  if (button.update() && button.activeNow() && !powerOffPending()) {
+    sendNextTestScreen();
   }
 
-  if (key.update() && !powerOffPending()) {
+  if (key.update()) {
     if (key.activeNow()) {
       keyDownMs = millis();
       Serial.println("Key down");
     } else {
       Serial.printf("Key up after %lu ms\n", millis() - keyDownMs);
     }
-    updateLed();
   }
+
+  if (!powerOffPending()) updateLed(); // power_latch.cpp flashes the LED itself once powering off
 
   otaLoop();
 }

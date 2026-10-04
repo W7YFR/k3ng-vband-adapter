@@ -22,7 +22,8 @@ void megaLinkLoop();
 bool megaLinkUp();
 
 // Sends one frame; returns false if it was dropped (link down or no room).
-bool megaLinkSend(const String &type, const String &fields);
+// evenIfDown sends it while the link is down too (bench testing).
+bool megaLinkSend(const String &type, const String &fields, bool evenIfDown = false);
 
 // Called for every valid frame from the keyer other than HI.
 void megaLinkSetFrameCallback(MegaLinkFrameCallback callback);

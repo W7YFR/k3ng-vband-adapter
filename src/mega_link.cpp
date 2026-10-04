@@ -121,8 +121,8 @@ bool megaLinkUp() {
   return linkUp;
 }
 
-bool megaLinkSend(const String &type, const String &fields) {
-  if (!linkUp) return false;
+bool megaLinkSend(const String &type, const String &fields, bool evenIfDown) {
+  if (!linkUp && !evenIfDown) return false;
   return sendFrame(fields.length() ? type + "," + fields : type);
 }
 
