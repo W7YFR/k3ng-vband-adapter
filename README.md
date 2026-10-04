@@ -6,7 +6,7 @@ Standalone ESP32 client for [VBand](https://hamradio.solutions/vband/): keys ove
 
 | Signal | GPIO | Notes |
 |---|---|---|
-| Keying line | 16 | Plain `INPUT`, active-high from the keyer's dedicated VBand line (Mega D12) through a 10k/20k divider -- see `pins.h` |
+| Keying line | 22 (D1) | Plain `INPUT`, active-high from the keyer's dedicated VBand line (Mega D7) through a 10k/20k divider -- see `pins.h` |
 | Channel button | 17 | `INPUT_PULLUP`; same physical button that engages the power latch -- see power latch diagram below |
 | Status LED | 15 | Active-high, through a current-limiting resistor to GND |
 | Power latch (hold) | 4 | Output -- see power latch diagram below |
