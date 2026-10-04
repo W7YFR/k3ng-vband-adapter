@@ -7,6 +7,11 @@ namespace {
 
 HardwareSerial &megaSerial = Serial2;
 
+// Frames can be sent from other tasks too (megaLinkSendBye() from the
+// power-off button task), so whole frames are written under a lock to keep
+// them from interleaving.
+SemaphoreHandle_t writeLock = nullptr;
+
 MegaLinkFrameCallback frameCallback = nullptr;
 
 bool linkUp = false;
@@ -37,11 +42,16 @@ bool sendFrame(const String &body) {
   char tail[5];
   snprintf(tail, sizeof(tail), "*%02X\n", checksum(body));
   size_t length = 1 + body.length() + 4;
-  if (length > MEGA_LINK_MAX_FRAME || megaSerial.availableForWrite() < (int)length) return false;
-  megaSerial.write('$');
-  megaSerial.print(body);
-  megaSerial.print(tail);
-  return true;
+  if (length > MEGA_LINK_MAX_FRAME || !writeLock) return false;
+  xSemaphoreTake(writeLock, portMAX_DELAY);
+  bool fits = megaSerial.availableForWrite() >= (int)length;
+  if (fits) {
+    megaSerial.write('$');
+    megaSerial.print(body);
+    megaSerial.print(tail);
+  }
+  xSemaphoreGive(writeLock);
+  return fits;
 }
 
 void sendVbandReady() {
@@ -105,6 +115,7 @@ void readFrames() {
 }  // namespace
 
 void megaLinkBegin() {
+  writeLock = xSemaphoreCreateMutex();
   rxFrame.reserve(MEGA_LINK_MAX_FRAME);
   // Must be set before begin(); without a TX ring buffer, writes wait on
   // the hardware FIFO and availableForWrite() can't be trusted to never block.
@@ -136,6 +147,10 @@ void megaLinkSetVbandReady(bool ready) {
   if (ready == vbandReady) return;
   vbandReady = ready;
   if (linkUp) sendVbandReady();
+}
+
+void megaLinkSendBye(const char *reason) {
+  sendFrame(String("BYE,") + reason);
 }
 
 void megaLinkSetFrameCallback(MegaLinkFrameCallback callback) {

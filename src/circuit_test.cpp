@@ -5,6 +5,7 @@
 #include "ota_updater.h"
 #include "power_latch.h"
 #include "mega_link.h"
+#include "display_events.h"
 #include "pins.h"
 #include "config.h"
 
@@ -69,6 +70,7 @@ void circuitTestBegin() {
   // Never joins VBand, but claims it's ready so the keyer moves keying to
   // the VBand key line and that line can be tested.
   megaLinkSetVbandReady(true);
+  displayCircuitTest();
   wifiConnect();
   otaBegin();
 }

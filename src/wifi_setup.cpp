@@ -5,6 +5,7 @@
 #include "vband_settings.h"
 #include "power_latch.h"
 #include "led_patterns.h"
+#include "display_events.h"
 #include "pins.h"
 #include "config.h"
 
@@ -76,7 +77,10 @@ void wifiConnect() {
   wm.setSaveParamsCallback([&]() {
     vbandSettingsSave(nameParam.getValue(), roomParam.getValue());
   });
-  wm.setAPCallback([](WiFiManager *) { startBlink(LED_PORTAL_BLINK_MS); });
+  wm.setAPCallback([](WiFiManager *) {
+    startBlink(LED_PORTAL_BLINK_MS);
+    displayWifiPortal();
+  });
 
   bool connected = false;
   if (portalRequestedAtBoot()) {
@@ -87,6 +91,7 @@ void wifiConnect() {
   if (!connected) {
     // Switches to the portal blink via the AP callback if it can't connect.
     startBlink(LED_WIFI_CONNECTING_BLINK_MS);
+    displayWifiConnecting();
     connected = wm.autoConnect(WIFI_MANAGER_AP_NAME, WIFI_MANAGER_AP_PASSWORD);
   }
   stopBlink();
@@ -96,6 +101,7 @@ void wifiConnect() {
     ESP.restart();
   }
   Serial.println("WiFi connected: " + WiFi.localIP().toString());
+  displayWifiConnected(WiFi.localIP());
   ledFlashSuccess();
 }
 

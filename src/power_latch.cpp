@@ -2,6 +2,7 @@
 #include <driver/gpio.h>
 #include "power_latch.h"
 #include "debounced_input.h"
+#include "mega_link.h"
 #include "pins.h"
 #include "config.h"
 
@@ -44,6 +45,7 @@ void powerOffButtonTask(void*) {
         millis() - pressedAtMs >= POWER_OFF_HOLD_MS) {
       Serial.println("Power off: release button");
       offPending = true;
+      megaLinkSendBye("OFF"); // power only drops once the button is let go, plenty of time to send
       powerLatchRelease();
       flashUntilPowerOff();
     }

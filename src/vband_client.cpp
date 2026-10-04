@@ -3,6 +3,7 @@
 #include "vband_client.h"
 #include "vband_settings.h"
 #include "config.h"
+#include "display_events.h"
 
 namespace {
 
@@ -55,6 +56,9 @@ void handleMessage(const String &msg) {
     Serial.println("Connected with id " + myId);
     ws.sendTXT("JC," + currentChannel());
   } else if (cmd == "CJN" && n >= 2) {
+    // Shown before ready flips so the screen reaches the keyer ahead of
+    // "VB,1", whose key line switch adds "TX 2" underneath it.
+    displayVbandJoined(fields[1], !ready);
     joined = true;
     ready = true;
     Serial.println("Joined channel " + fields[1]);
@@ -81,6 +85,8 @@ void onWsEvent(WStype_t type, uint8_t *payload, size_t length) {
       break;
     case WStype_DISCONNECTED:
       Serial.println("WS disconnected");
+      // Fires again on every failed reconnect attempt; only announce the loss.
+      if (ready) displayVbandLost();
       joined = false;
       ready = false;
       break;

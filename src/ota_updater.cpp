@@ -5,12 +5,15 @@
 #include "power_latch.h"
 #include "led_patterns.h"
 #include "pins.h"
+#include "display_events.h"
+#include "mega_link.h"
 
 namespace {
 
 // loop() is stuck in ArduinoOTA.handle() for the whole update, so nothing
 // else is driving the LED while these patterns run.
 
+bool otaActive = false;
 bool progressLedOn = false;
 unsigned long lastProgressToggleMs = 0;
 
@@ -40,20 +43,33 @@ void flashOtaFailure() {
 }  // namespace
 
 void otaBegin() {
+#ifndef OTA_ALWAYS_ON
+  return; // not listening for updates (see OTA_ALWAYS_ON in config.h)
+#endif
+  otaActive = true;
   ArduinoOTA.setHostname(OTA_HOSTNAME);
   if (strlen(OTA_PASSWORD) > 0) {
     ArduinoOTA.setPassword(OTA_PASSWORD);
   }
   ArduinoOTA.onStart([]() {
     Serial.println("OTA update starting");
+    // loop() is stuck here until the update ends, so nothing we key can
+    // reach VBand -- put the keyer back on its radio meanwhile.
+    megaLinkSetVbandReady(false);
+    displayOtaStarting();
     pinMode(PIN_LED, OUTPUT);
     progressLedOn = false;
     lastProgressToggleMs = millis();
     setLed(false);
   });
-  ArduinoOTA.onProgress([](unsigned int, unsigned int) { flickerOtaProgress(); });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    flickerOtaProgress();
+    displayOtaProgress(progress, total); // also keeps the keyer link from timing out
+  });
   ArduinoOTA.onEnd([]() {
     Serial.println("OTA update complete");
+    displayOtaDone();
+    megaLinkSendBye("OTA");
     // ArduinoOTA restarts right after this returns (the uploader has
     // already been sent its OK, so the flash doesn't hold it up).
     powerLatchHoldThroughRestart();
@@ -62,6 +78,7 @@ void otaBegin() {
   });
   ArduinoOTA.onError([](ota_error_t error) {
     Serial.println("OTA error [" + String(error) + "]");
+    displayOtaFailed(); // loop() resumes after this and restores "VB" from vbandIsReady()
     setLed(false);
     flashOtaFailure();
   });
@@ -69,5 +86,6 @@ void otaBegin() {
 }
 
 void otaLoop() {
+  if (!otaActive) return;
   ArduinoOTA.handle();
 }

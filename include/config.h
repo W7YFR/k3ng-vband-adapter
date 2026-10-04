@@ -80,6 +80,10 @@
 #define AUDIO_SAMPLE_RATE_HZ 40000
 #define AUDIO_QUEUE_CAPACITY 32
 
+// Listen for OTA updates the whole time the board is running. Comment
+// out to turn OTA off (it can then only be flashed over USB).
+#define OTA_ALWAYS_ON
+
 // Over-the-air updates (ArduinoOTA). Hostname is what shows up for
 // `pio run -t upload --upload-port <hostname>.local` / Arduino IDE's
 // network port list. Both values are normally injected at build time

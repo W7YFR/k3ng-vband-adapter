@@ -31,5 +31,10 @@ bool megaLinkSend(const String &type, const String &fields, bool evenIfDown = fa
 // VBand while this is true.
 void megaLinkSetVbandReady(bool ready);
 
+// Tells the keyer we're about to go away on purpose (reboot or power
+// off), so it switches back right away instead of waiting out the link
+// timeout. Safe to call from any task.
+void megaLinkSendBye(const char *reason);
+
 // Called for every valid frame from the keyer other than HI.
 void megaLinkSetFrameCallback(MegaLinkFrameCallback callback);
