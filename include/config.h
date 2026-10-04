@@ -80,6 +80,12 @@
 #define AUDIO_SAMPLE_RATE_HZ 20000
 #define AUDIO_QUEUE_CAPACITY 32
 
+// Received text (received_text.cpp): how many recent senders get their
+// own decoder at once (beyond that, the one heard from least recently is
+// reused), and the longest tag shown for a sender on the keyer.
+#define RX_TEXT_MAX_SENDERS 8
+#define RX_TEXT_TAG_MAX_LEN 7
+
 // Listen for OTA updates the whole time the board is running. Comment
 // out to turn OTA off (it can then only be flashed over USB).
 #define OTA_ALWAYS_ON

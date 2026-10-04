@@ -66,12 +66,11 @@ void handleMessage(const String &msg) {
     Serial.println("Server connection failure: " + fields[1]);
   } else if (cmd == "SMK" && n >= 6) {
     // SMK,<channel>,<user_id>,<user_name>,<space>,<mark> -- raw timing only,
-    // the server never decodes to text. Letters would require porting
-    // decoder.js's Morse decoder; for now just log the numbers.
+    // the server never decodes to text (see received_text.cpp for that).
     if (fields[2] != myId) {
       Serial.println("RX " + fields[3] + " space=" + fields[4] + " mark=" + fields[5]);
       if (rxCallback) {
-        rxCallback(fields[4].toInt(), fields[5].toInt());
+        rxCallback(fields[2], fields[3], fields[4].toInt(), fields[5].toInt());
       }
     }
   }
@@ -132,6 +131,10 @@ bool vbandIsJoined() {
 
 bool vbandIsReady() {
   return ready;
+}
+
+String vbandChannelName() {
+  return currentChannel();
 }
 
 char vbandChannelCode() {

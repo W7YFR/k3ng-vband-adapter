@@ -12,4 +12,10 @@
 // non-blocking state machine polled from sidetoneLoop().
 void sidetoneBegin();
 void sidetoneLoop();
-void sidetoneQueueSpaceMark(unsigned long space, unsigned long mark);
+// sender is passed back untouched to the played callback.
+void sidetoneQueueSpaceMark(unsigned long space, unsigned long mark, uint8_t sender);
+
+// Called as each queued pair finishes playing (end of its mark), e.g. to
+// decode it in step with what's heard. Call once from setup().
+typedef void (*SidetonePlayedCallback)(uint8_t sender, unsigned long space, unsigned long mark);
+void sidetoneSetPlayedCallback(SidetonePlayedCallback callback);

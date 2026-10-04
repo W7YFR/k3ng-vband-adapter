@@ -45,6 +45,7 @@ void stopTone() {
 struct SpaceMark {
   unsigned long space;
   unsigned long mark;
+  uint8_t sender;
 };
 SpaceMark queue[AUDIO_QUEUE_CAPACITY];
 int queueHead = 0;
@@ -54,6 +55,7 @@ enum class PlaybackState { Idle, Spacing, Marking };
 PlaybackState playbackState = PlaybackState::Idle;
 unsigned long phaseStartMs = 0;
 SpaceMark current;
+SidetonePlayedCallback playedCallback = nullptr;
 
 }  // namespace
 
@@ -73,7 +75,11 @@ void sidetoneBegin() {
   // Alarm stays disabled until a tone starts.
 }
 
-void sidetoneQueueSpaceMark(unsigned long space, unsigned long mark) {
+void sidetoneSetPlayedCallback(SidetonePlayedCallback callback) {
+  playedCallback = callback;
+}
+
+void sidetoneQueueSpaceMark(unsigned long space, unsigned long mark, uint8_t sender) {
   if (queueCount >= AUDIO_QUEUE_CAPACITY) {
     // Playback has fallen behind arrival -- drop the oldest queued pair
     // rather than growing unbounded or blocking the caller.
@@ -81,7 +87,7 @@ void sidetoneQueueSpaceMark(unsigned long space, unsigned long mark) {
     queueCount--;
   }
   int tail = (queueHead + queueCount) % AUDIO_QUEUE_CAPACITY;
-  queue[tail] = {space, mark};
+  queue[tail] = {space, mark, sender};
   queueCount++;
 }
 
@@ -110,4 +116,5 @@ void sidetoneLoop() {
   if (now - phaseStartMs < current.mark) return;
   stopTone();
   playbackState = PlaybackState::Idle;
+  if (playedCallback) playedCallback(current.sender, current.space, current.mark);
 }

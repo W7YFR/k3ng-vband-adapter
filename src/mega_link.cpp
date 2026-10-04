@@ -10,6 +10,7 @@ HardwareSerial &megaSerial = Serial2;
 MegaLinkFrameCallback frameCallback = nullptr;
 
 bool linkUp = false;
+unsigned int badFrames = 0; // since the link last came up -- garbled on the wire?
 bool vbandReady = false;
 unsigned long lastFrameMs = 0;
 unsigned long lastHiMs = 0;
@@ -57,18 +58,25 @@ void sendHi() {
 void setLinkUp(bool up) {
   if (up == linkUp) return;
   linkUp = up;
-  Serial.println(up ? "Mega link up" : "Mega link down");
+  if (up) {
+    Serial.println("Mega link up");
+    badFrames = 0;
+  } else {
+    Serial.printf("Mega link down (%u bad frames from the keyer since it came up)\n", badFrames);
+  }
 }
 
 // rxFrame holds "<TYPE>[,<fields>]*XX" -- check it and hand it on.
 void handleFrame() {
   int star = rxFrame.lastIndexOf('*');
-  if (star < 1 || star != (int)rxFrame.length() - 3) return;
-  int hi = hexDigit(rxFrame[star + 1]);
-  int lo = hexDigit(rxFrame[star + 2]);
-  if (hi < 0 || lo < 0) return;
-  String body = rxFrame.substring(0, star);
-  if (checksum(body) != (uint8_t)((hi << 4) | lo)) return;
+  int hi = star < 1 ? -1 : hexDigit(rxFrame[star + 1]);
+  int lo = star < 1 ? -1 : hexDigit(rxFrame[star + 2]);
+  String body = star < 1 ? String() : rxFrame.substring(0, star);
+  if (star < 1 || star != (int)rxFrame.length() - 3 || hi < 0 || lo < 0 ||
+      checksum(body) != (uint8_t)((hi << 4) | lo)) {
+    badFrames++;
+    return;
+  }
 
   lastFrameMs = millis();
   if (!linkUp) {

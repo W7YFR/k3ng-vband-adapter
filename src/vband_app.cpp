@@ -8,13 +8,23 @@
 #include "led_indicator.h"
 #include "sidetone.h"
 #include "mega_link.h"
+#include "received_text.h"
+
+namespace {
+
+void onVbandRx(const String &userId, const String &userName, unsigned long space, unsigned long mark) {
+  sidetoneQueueSpaceMark(space, mark, receivedTextSender(userId, userName));
+}
+
+}  // namespace
 
 void vbandAppBegin() {
   keyerBegin();
   channelButtonBegin();
   ledBegin();
   sidetoneBegin();
-  vbandSetRxCallback(sidetoneQueueSpaceMark);
+  vbandSetRxCallback(onVbandRx);
+  sidetoneSetPlayedCallback(receivedTextPlayed);
   megaLinkBegin(); // before wifiConnect(), which blocks
 
   wifiConnect();
@@ -30,5 +40,6 @@ void vbandAppLoop() {
   channelButtonLoop(vbandCycleChannel);
   ledLoop();
   sidetoneLoop();
+  receivedTextLoop();
   otaLoop();
 }
