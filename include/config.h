@@ -77,7 +77,7 @@
 // ever falls behind arrival, the oldest queued pair is dropped rather
 // than growing unbounded.
 #define AUDIO_TONE_HZ 700
-#define AUDIO_SAMPLE_RATE_HZ 40000
+#define AUDIO_SAMPLE_RATE_HZ 20000
 #define AUDIO_QUEUE_CAPACITY 32
 
 // Listen for OTA updates the whole time the board is running. Comment

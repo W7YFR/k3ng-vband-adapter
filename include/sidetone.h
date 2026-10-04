@@ -5,7 +5,7 @@
 // circuit alongside its own sidetone.
 // Sample generation runs on a hardware timer interrupt, fully
 // decoupled from loop() timing, so playback stays glitch-free regardless
-// of what else is running.
+// of what else is running. The timer only runs while a tone is sounding.
 //
 // Queued space/mark pairs are replayed in arrival order at their
 // original timing -- silence for `space` ms, tone for `mark` ms -- via a

@@ -33,7 +33,8 @@ void megaLinkSetVbandReady(bool ready);
 
 // Tells the keyer we're about to go away on purpose (reboot or power
 // off), so it switches back right away instead of waiting out the link
-// timeout. Safe to call from any task.
+// timeout. Called from the power-off button task as well as loop(); a
+// frame mangled by the two writing at once just fails the keyer's checksum.
 void megaLinkSendBye(const char *reason);
 
 // Called for every valid frame from the keyer other than HI.
