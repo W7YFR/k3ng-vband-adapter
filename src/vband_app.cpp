@@ -7,6 +7,7 @@
 #include "channel_button.h"
 #include "led_indicator.h"
 #include "sidetone.h"
+#include "mega_link.h"
 
 void vbandAppBegin() {
   keyerBegin();
@@ -14,6 +15,7 @@ void vbandAppBegin() {
   ledBegin();
   sidetoneBegin();
   vbandSetRxCallback(sidetoneQueueSpaceMark);
+  megaLinkBegin(); // before wifiConnect(), which blocks
 
   wifiConnect();
   vbandBegin();
@@ -22,6 +24,7 @@ void vbandAppBegin() {
 
 void vbandAppLoop() {
   vbandLoop();
+  megaLinkLoop();
   keyerLoop(vbandSendSpaceMark);
   channelButtonLoop(vbandCycleChannel);
   ledLoop();

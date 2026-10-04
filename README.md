@@ -6,11 +6,13 @@ Standalone ESP32 client for [VBand](https://hamradio.solutions/vband/): keys ove
 
 | Signal | GPIO | Notes |
 |---|---|---|
-| Keying line | 16 | Plain `INPUT`, externally biased through a voltage divider -- see `pins.h` |
+| Keying line | 16 | Plain `INPUT`, active-high from the keyer's dedicated VBand line (Mega D12) through a 10k/20k divider -- see `pins.h` |
 | Channel button | 17 | `INPUT_PULLUP`; same physical button that engages the power latch -- see power latch diagram below |
 | Status LED | 15 | Active-high, through a current-limiting resistor to GND |
 | Power latch (hold) | 4 | Output -- see power latch diagram below |
 | Sidetone audio out | 25 | Built-in DAC1 output -- see wiring below |
+| Keyer link TX | 18 (D5) | `Serial2` TX to Mega RX2 (D17) through a 10k series resistor -- see `pins.h` |
+| Keyer link RX | 19 (D6) | `Serial2` RX from Mega TX2 (D16) through a 10k/20k divider (5V -> 3.3V) |
 
 ## Soft power latch
 

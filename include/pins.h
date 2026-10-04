@@ -1,7 +1,10 @@
 #pragma once
 
-// Carries the keying line through an external voltage divider
-// (plain INPUT, biased externally -- see keyerBegin() in keyer.cpp).
+// Carries the keyer's dedicated VBand keying line (K3NG tx_key_line_2,
+// Mega D12 -- high while the key is down) through an external
+// 10k/20k voltage divider, whose 20k leg to GND also holds it low when
+// idle or when the Mega is off (plain INPUT -- see keyerBegin() in
+// keyer.cpp; polarity is KEY_ACTIVE_HIGH in config.h).
 // GPIO16 is silkscreened "D4" on the Wemos D1 Mini32; don't confuse it
 // with GPIO4, which is a different, unrelated pin on this board.
 #define PIN_KEY 16
@@ -39,3 +42,13 @@
 // with that summing resistor since DAC full-scale (3.3V) will be far
 // hotter than a typical sidetone line level. See sidetone.cpp.
 #define PIN_AUDIO_OUT 25
+
+// Serial link to the K3NG keyer (mega_link.cpp), on UART2 remapped off
+// its default GPIO16/17 (taken by the key and button above). GPIO18/19
+// are silkscreened D5/D6 and sit side by side on the outer header row.
+// TX goes to Mega RX2 (D17) through a 10k series resistor; RX comes from
+// Mega TX2 (D16) through a 10k/20k divider (5V -> 3.3V), whose 20k leg
+// to GND holds it low while the Mega's TX2 is idle (high-impedance) or
+// the Mega is off.
+#define PIN_MEGA_TX 18
+#define PIN_MEGA_RX 19

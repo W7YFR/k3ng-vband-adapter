@@ -47,6 +47,10 @@
 // Software debounce to prevent jitter
 #define DEBOUNCE_MS 5
 
+// The keying line idles LOW and goes HIGH while the key is down (the
+// keyer's dedicated tx_key_line_2 through a divider -- see pins.h).
+#define KEY_ACTIVE_HIGH true
+
 // Mechanical pushbuttons bounce longer than the keying line does, so the
 // channel button gets its own, looser debounce window.
 #define BUTTON_DEBOUNCE_MS 30
@@ -107,3 +111,16 @@
 // idle time since boot before your first keydown) becomes real playback
 // delay for everyone else and backs up everything queued behind it.
 #define MAX_TIME_MS 3000
+
+// Serial link to the K3NG keyer (mega_link.cpp). 38400 baud keeps the
+// Mega's 16MHz UART clock error around 0.2% (vs ~2% at 115200). The
+// ESP32 always talks first: it sends HI every MEGA_LINK_HI_DOWN_MS until
+// the keyer answers, then every MEGA_LINK_HI_UP_MS as a heartbeat. The
+// link counts as down after MEGA_LINK_TIMEOUT_MS without a valid frame
+// from the keyer. MEGA_LINK_MAX_FRAME caps one "$...*XX" frame in bytes.
+#define MEGA_LINK_BAUD 38400
+#define MEGA_LINK_HI_DOWN_MS 1000
+#define MEGA_LINK_HI_UP_MS 2000
+#define MEGA_LINK_TIMEOUT_MS 6000
+#define MEGA_LINK_MAX_FRAME 64
+#define MEGA_LINK_PROTOCOL_VERSION "1"

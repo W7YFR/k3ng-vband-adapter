@@ -8,7 +8,7 @@ namespace {
 
 // Keying line has its own external divider biasing it, so plain INPUT --
 // an internal pull-up here would skew the divider math.
-DebouncedInput key(PIN_KEY, DEBOUNCE_MS);
+DebouncedInput key(PIN_KEY, DEBOUNCE_MS, KEY_ACTIVE_HIGH);
 unsigned long downStartMs = 0;
 unsigned long lastReleaseMs = 0;
 
