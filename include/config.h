@@ -37,10 +37,11 @@
 #define VBAND_DEFAULT_ROOM "tacos"
 #define VBAND_SETTING_MAX_LEN 32
 
-// CIRCUIT_TEST (power latch bench test, see circuit_test.cpp)
+// CIRCUIT_TEST (bench test of the power latch, key line and keyer link, see circuit_test.cpp)
 // When set, the board still connects to WiFi
 // and accepts OTA updates, but never joins VBand.
-// The button lights the LED while held.
+// The LED lights while the button is held or the key line is active,
+// and each button press sends the keyer a test status screen.
 // Run `pio run -e circuit_test -t upload` or set the define below:
 // #define CIRCUIT_TEST
 
