@@ -4,6 +4,7 @@
 #include "vband_settings.h"
 #include "config.h"
 #include "display_events.h"
+#include "room_users.h"
 
 namespace {
 
@@ -11,6 +12,15 @@ WebSocketsClient ws;
 bool joined = false;
 bool ready = false;
 String myId;
+String joinedChannel;
+
+// After a join, the join screen (and "ready", whose key line switch on
+// the keyer adds "TX 2" under that screen) waits for the channel's user
+// list, up to JOIN_SCREEN_WAIT_MS.
+bool joinScreenPending = false;
+bool joinScreenFirst = false;
+unsigned long joinedAtMs = 0;
+unsigned long lastUserListRequestMs = 0;
 VbandRxSpaceMarkCallback rxCallback = nullptr;
 
 // Public channels named on the site, followed by the custom room
@@ -27,6 +37,18 @@ int channelIndex = CHANNEL_CYCLE_COUNT - 1;
 String currentChannel() {
   if (channelIndex < PUBLIC_CHANNEL_COUNT) return PUBLIC_CHANNELS[channelIndex];
   return vbandSettingsRoom();
+}
+
+void requestUserList() {
+  ws.sendTXT("LU," + joinedChannel);
+  lastUserListRequestMs = millis();
+}
+
+void finishJoin() {
+  joinScreenPending = false;
+  displayVbandJoined(joinedChannel, joinScreenFirst,
+                     roomUsersKnown() ? roomUsersSummary() : String());
+  ready = true;
 }
 
 // Splits a comma-separated message into at most maxOut fields.
@@ -55,13 +77,27 @@ void handleMessage(const String &msg) {
     myId = fields[1];
     Serial.println("Connected with id " + myId);
     ws.sendTXT("JC," + currentChannel());
+    // As the website does after connecting; it seems to be what gets the
+    // server pushing CUP (user count changed) messages.
+    ws.sendTXT("LC");
   } else if (cmd == "CJN" && n >= 2) {
-    // Shown before ready flips so the screen reaches the keyer ahead of
-    // "VB,1", whose key line switch adds "TX 2" underneath it.
-    displayVbandJoined(fields[1], !ready);
     joined = true;
-    ready = true;
+    joinedChannel = fields[1];
+    joinScreenPending = true;
+    joinScreenFirst = !ready;
+    joinedAtMs = millis();
+    roomUsersReset(joinedChannel, myId);
+    requestUserList();
     Serial.println("Joined channel " + fields[1]);
+  } else if (cmd == "ULB" && n >= 2) {
+    roomUsersListBegin(fields[1]);
+  } else if (cmd == "ULE" && n >= 4) {
+    roomUsersListAdd(fields[1], fields[2], fields[3]);
+  } else if (cmd == "ULC" && n >= 2) {
+    roomUsersListComplete(fields[1]);
+    if (joinScreenPending && roomUsersKnown()) finishJoin();
+  } else if (cmd == "CUP" && n >= 3) {
+    if (joined && fields[1] == joinedChannel) requestUserList();
   } else if (cmd == "CNF" && n >= 2) {
     Serial.println("Server connection failure: " + fields[1]);
   } else if (cmd == "SMK" && n >= 6) {
@@ -73,6 +109,8 @@ void handleMessage(const String &msg) {
         rxCallback(fields[2], fields[3], fields[4].toInt(), fields[5].toInt());
       }
     }
+  } else if (cmd != "CLB" && cmd != "CLE" && cmd != "CLC" && cmd != "PON") {
+    Serial.println("Unhandled: " + msg); // learning what else the server sends
   }
 }
 
@@ -88,6 +126,7 @@ void onWsEvent(WStype_t type, uint8_t *payload, size_t length) {
       if (ready) displayVbandLost();
       joined = false;
       ready = false;
+      joinScreenPending = false;
       break;
     case WStype_TEXT: {
       String msg((char *)payload, length);
@@ -110,6 +149,13 @@ void vbandBegin() {
 
 void vbandLoop() {
   ws.loop();
+
+  if (joinScreenPending && millis() - joinedAtMs >= JOIN_SCREEN_WAIT_MS) {
+    finishJoin(); // the user list didn't come; don't hold up VBand for it
+  }
+  if (joined && millis() - lastUserListRequestMs >= ROOM_USERS_POLL_MS) {
+    requestUserList();
+  }
 }
 
 void vbandSendSpaceMark(unsigned long space, unsigned long mark) {

@@ -12,9 +12,22 @@ namespace {
 const unsigned long SHOW_BRIEF_MS = 3000;
 const unsigned long SHOW_UNTIL_REPLACED_MS = 60000;
 
-// rows: up to four rows separated by '|'.
+// rows: up to four rows separated by '|'. Each is cut to the keyer's
+// width (it would cut them there anyway) and the whole screen to what fits
+// in one frame, so long room or user names can't get it dropped.
 void show(unsigned long ms, const String &rows) {
-  megaLinkSend("ST", String(ms) + "," + rows, true);
+  String fields = String(ms) + ",";
+  int start = 0;
+  while (start <= (int)rows.length()) {
+    int end = rows.indexOf('|', start);
+    if (end < 0) end = rows.length();
+    if (start > 0) fields += '|';
+    fields += rows.substring(start, min(end, start + KEYER_DISPLAY_COLUMNS));
+    start = end + 1;
+  }
+  const int maxFields = MEGA_LINK_MAX_FRAME - 8; // "$ST," and "*XX\n"
+  if ((int)fields.length() > maxFields) fields = fields.substring(0, maxFields);
+  megaLinkSend("ST", fields, true);
 }
 
 }  // namespace
@@ -31,8 +44,8 @@ void displayWifiConnected(const IPAddress &ip) {
   show(SHOW_BRIEF_MS, "WiFi OK|" + ip.toString());
 }
 
-void displayVbandJoined(const String &channel, bool firstJoin) {
-  show(SHOW_BRIEF_MS, (firstJoin ? "VBand On|" : "Channel|") + channel);
+void displayVbandJoined(const String &channel, bool firstJoin, const String &users) {
+  show(SHOW_BRIEF_MS, (firstJoin ? "VBand On|" : "Channel|") + channel + "|" + users);
 }
 
 void displayVbandLost() {
@@ -63,4 +76,12 @@ void displayOtaFailed() {
 
 void displayCircuitTest() {
   show(SHOW_BRIEF_MS, "VBand Test Mode|Press button|for test screens");
+}
+
+void displayUserJoined(const String &tag) {
+  megaLinkSend("SYS", tag + " joined", true);
+}
+
+void displayUserLeft(const String &tag) {
+  megaLinkSend("SYS", tag + " left", true);
 }

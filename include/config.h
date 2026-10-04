@@ -86,6 +86,14 @@
 #define RX_TEXT_MAX_SENDERS 8
 #define RX_TEXT_TAG_MAX_LEN 7
 
+// Who's in the room (room_users.cpp). After joining a channel the join
+// screen waits up to JOIN_SCREEN_WAIT_MS for the server's user list so it
+// can include it. The list is asked for again whenever the server says
+// the channel's count changed, and every ROOM_USERS_POLL_MS regardless in
+// case it doesn't.
+#define JOIN_SCREEN_WAIT_MS 2000
+#define ROOM_USERS_POLL_MS 30000
+
 // Listen for OTA updates the whole time the board is running. Comment
 // out to turn OTA off (it can then only be flashed over USB).
 #define OTA_ALWAYS_ON
@@ -135,3 +143,7 @@
 #define MEGA_LINK_TIMEOUT_MS 6000
 #define MEGA_LINK_MAX_FRAME 64
 #define MEGA_LINK_PROTOCOL_VERSION "1"
+
+// Columns on the keyer's display (its LCD_COLUMNS). Status screens are
+// cut to this width before sending, to keep frames short.
+#define KEYER_DISPLAY_COLUMNS 18

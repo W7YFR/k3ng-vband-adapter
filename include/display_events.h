@@ -14,10 +14,15 @@
 void displayWifiConnecting();
 void displayWifiPortal();
 void displayWifiConnected(const IPAddress &ip);
-void displayVbandJoined(const String &channel, bool firstJoin);
+void displayVbandJoined(const String &channel, bool firstJoin, const String &users);
 void displayVbandLost();
 void displayOtaStarting();
 void displayOtaProgress(unsigned int progress, unsigned int total);
 void displayOtaDone();
 void displayOtaFailed();
 void displayCircuitTest();
+
+// Lines of their own in the keyer's scrolling conversation ("SYS"
+// frames), rather than status screens.
+void displayUserJoined(const String &tag);
+void displayUserLeft(const String &tag);
