@@ -48,6 +48,14 @@ void displayVbandJoined(const String &channel, bool firstJoin, const String &use
   show(SHOW_BRIEF_MS, (firstJoin ? "VBand On|" : "Channel|") + channel + "|" + users);
 }
 
+void displayVbandConnecting() {
+  show(SHOW_UNTIL_REPLACED_MS, "VBand|Connecting...");
+}
+
+void displayVbandUnreachable(bool wifiUp) {
+  show(SHOW_UNTIL_REPLACED_MS, wifiUp ? "VBand Offline|Retrying..." : "WiFi Lost|Retrying...");
+}
+
 void displayVbandLost() {
   show(SHOW_BRIEF_MS, "VBand Lost|Reconnecting");
 }

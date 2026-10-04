@@ -5,6 +5,7 @@
 #include "config.h"
 #include "display_events.h"
 #include "room_users.h"
+#include "wifi_setup.h"
 
 namespace {
 
@@ -77,9 +78,6 @@ void handleMessage(const String &msg) {
     myId = fields[1];
     Serial.println("Connected with id " + myId);
     ws.sendTXT("JC," + currentChannel());
-    // As the website does after connecting; it seems to be what gets the
-    // server pushing CUP (user count changed) messages.
-    ws.sendTXT("LC");
   } else if (cmd == "CJN" && n >= 2) {
     joined = true;
     joinedChannel = fields[1];
@@ -122,8 +120,12 @@ void onWsEvent(WStype_t type, uint8_t *payload, size_t length) {
       break;
     case WStype_DISCONNECTED:
       Serial.println("WS disconnected");
-      // Fires again on every failed reconnect attempt; only announce the loss.
-      if (ready) displayVbandLost();
+      // Fires again on every failed reconnect attempt, roughly every 5s.
+      if (ready) {
+        displayVbandLost();
+      } else {
+        displayVbandUnreachable(wifiConnected());
+      }
       joined = false;
       ready = false;
       joinScreenPending = false;
@@ -142,6 +144,7 @@ void onWsEvent(WStype_t type, uint8_t *payload, size_t length) {
 }  // namespace
 
 void vbandBegin() {
+  displayVbandConnecting();
   ws.begin(VBAND_HOST, VBAND_PORT, VBAND_PATH, VBAND_PROTOCOL);
   ws.onEvent(onWsEvent);
   ws.setReconnectInterval(5000);

@@ -15,7 +15,11 @@ void displayWifiConnecting();
 void displayWifiPortal();
 void displayWifiConnected(const IPAddress &ip);
 void displayVbandJoined(const String &channel, bool firstJoin, const String &users);
+void displayVbandConnecting();
 void displayVbandLost();
+// A connection attempt failed before VBand was ever ready (on boot or
+// after losing it); says whether WiFi itself is down.
+void displayVbandUnreachable(bool wifiUp);
 void displayOtaStarting();
 void displayOtaProgress(unsigned int progress, unsigned int total);
 void displayOtaDone();
