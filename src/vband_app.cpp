@@ -9,6 +9,7 @@
 #include "sidetone.h"
 #include "mega_link.h"
 #include "received_text.h"
+#include "diagnostics.h"
 
 namespace {
 
@@ -26,6 +27,7 @@ void vbandAppBegin() {
   vbandSetRxCallback(onVbandRx);
   sidetoneSetPlayedCallback(receivedTextPlayed);
   megaLinkBegin(); // before wifiConnect(), which blocks
+  diagnosticsBegin();
 
   wifiConnect();
   vbandBegin();
@@ -33,13 +35,26 @@ void vbandAppBegin() {
 }
 
 void vbandAppLoop() {
+  diagnosticsStageStart();
   vbandLoop();
+  diagnosticsStageEnd(DIAG_VBAND);
+  diagnosticsStageStart();
   megaLinkSetVbandReady(vbandIsReady());
   megaLinkLoop();
+  diagnosticsStageEnd(DIAG_MEGA);
+  diagnosticsStageStart();
   keyerLoop(vbandSendSpaceMark);
+  diagnosticsStageEnd(DIAG_KEYER);
+  diagnosticsStageStart();
+  sidetoneLoop();
+  diagnosticsStageEnd(DIAG_SIDETONE);
+  diagnosticsStageStart();
+  receivedTextLoop();
+  diagnosticsStageEnd(DIAG_RXTEXT);
+  diagnosticsStageStart();
   channelButtonLoop(vbandCycleChannel);
   ledLoop();
-  sidetoneLoop();
-  receivedTextLoop();
   otaLoop();
+  diagnosticsStageEnd(DIAG_OTHER);
+  diagnosticsLoop();
 }

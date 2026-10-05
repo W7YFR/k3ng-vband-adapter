@@ -6,6 +6,7 @@
 #include "display_events.h"
 #include "room_users.h"
 #include "wifi_setup.h"
+#include "diagnostics.h"
 
 namespace {
 
@@ -104,6 +105,7 @@ void handleMessage(const String &msg) {
     // SMK,<channel>,<user_id>,<user_name>,<space>,<mark> -- raw timing only,
     // the server never decodes to text (see received_text.cpp for that).
     if (fields[2] != myId) {
+      diagnosticsNoteSmk();
       Serial.println("RX " + fields[3] + " space=" + fields[4] + " mark=" + fields[5]);
       if (rxCallback) {
         rxCallback(fields[2], fields[3], fields[4].toInt(), fields[5].toInt());
@@ -122,6 +124,7 @@ void onWsEvent(WStype_t type, uint8_t *payload, size_t length) {
       break;
     case WStype_DISCONNECTED:
       Serial.println("WS disconnected");
+      diagnosticsNoteWsDisconnect();
       // Fires again on every failed reconnect attempt, roughly every 5s.
       if (ready) {
         displayVbandLost();
@@ -135,6 +138,7 @@ void onWsEvent(WStype_t type, uint8_t *payload, size_t length) {
     case WStype_TEXT: {
       String msg((char *)payload, length);
       msg.replace(String('\0'), ""); // server pads some frames with nulls
+      diagnosticsNoteServerMessage();
       handleMessage(msg);
       break;
     }

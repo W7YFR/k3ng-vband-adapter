@@ -153,3 +153,9 @@
 // Columns on the keyer's display (its LCD_COLUMNS). Status screens are
 // cut to this width before sending, to keep frames short.
 #define KEYER_DISPLAY_COLUMNS 18
+
+// Field diagnostics (diagnostics.cpp): a "DIAG ..." line on the USB
+// serial port every DIAGNOSTICS_INTERVAL_MS, plus one per WiFi/VBand drop.
+// Temporary, for tracking down connection drops; comment out when done.
+#define DIAGNOSTICS_LOG
+#define DIAGNOSTICS_INTERVAL_MS 5000

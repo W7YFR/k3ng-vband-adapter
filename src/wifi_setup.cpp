@@ -100,6 +100,10 @@ void wifiConnect() {
     Serial.println("WiFi provisioning failed, restarting");
     ESP.restart();
   }
+  // Modem sleep (the ESP32 default) dozes between access point beacons;
+  // received packets get delayed or lost, and the lost ones stall the
+  // VBand connection for seconds while TCP backs off and retransmits.
+  WiFi.setSleep(false);
   Serial.println("WiFi connected: " + WiFi.localIP().toString());
   displayWifiConnected(WiFi.localIP());
   ledFlashSuccess();
