@@ -78,7 +78,7 @@
 // than growing unbounded.
 #define AUDIO_TONE_HZ 700
 #define AUDIO_SAMPLE_RATE_HZ 20000
-#define AUDIO_QUEUE_CAPACITY 32
+#define AUDIO_QUEUE_CAPACITY 128 // ~15-25 characters; 12 bytes each
 
 // Received text (received_text.cpp): how many recent senders get their
 // own decoder at once (beyond that, the one heard from least recently is
