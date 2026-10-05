@@ -14,7 +14,20 @@ static_assert(PIN_AUDIO_OUT == 25, "writeDac() drives DAC1, which is GPIO25");
 
 hw_timer_t *audioTimer = nullptr;
 volatile uint32_t phaseAccumulator = 0;
-uint32_t phaseIncrement = 0;
+volatile uint32_t phaseIncrement = 0;
+
+#ifdef AUDIO_TONE_PER_SENDER
+constexpr uint16_t SENDER_TONES_HZ[] = AUDIO_SENDER_TONES_HZ;
+static_assert(sizeof(SENDER_TONES_HZ) / sizeof(SENDER_TONES_HZ[0]) == RX_TEXT_MAX_SENDERS,
+              "AUDIO_SENDER_TONES_HZ needs one pitch per RX_TEXT_MAX_SENDERS slot");
+#endif
+
+uint32_t toneHz(uint8_t sender) {
+#ifdef AUDIO_TONE_PER_SENDER
+  if (sender < RX_TEXT_MAX_SENDERS) return SENDER_TONES_HZ[sender];
+#endif
+  return AUDIO_TONE_HZ;
+}
 
 // One register write, from IRAM. dacWrite() re-runs the DAC pad setup
 // (from flash, under a lock) on every call, which at this sample rate
@@ -31,7 +44,8 @@ void IRAM_ATTR onAudioTimer() {
   phaseAccumulator += phaseIncrement;
 }
 
-void startTone() {
+void startTone(uint8_t sender) {
+  phaseIncrement = (uint32_t)(((uint64_t)toneHz(sender) << 32) / AUDIO_SAMPLE_RATE_HZ);
   phaseAccumulator = 0;
   timerAlarmEnable(audioTimer);
 }
@@ -65,8 +79,6 @@ void sidetoneBegin() {
     int8_t sample = (int8_t)(127.0f * sinf(angle));
     sineTable[i] = (uint8_t)(128 + sample);
   }
-  phaseIncrement = (uint32_t)(((uint64_t)AUDIO_TONE_HZ << 32) / AUDIO_SAMPLE_RATE_HZ);
-
   dacWrite(PIN_AUDIO_OUT, 128); // enables the DAC pad once; writeDac() just updates its level
 
   audioTimer = timerBegin(0, 80, true); // 80MHz APB / 80 = 1MHz tick (1us)
@@ -108,7 +120,7 @@ void sidetoneLoop() {
     if (now - phaseStartMs < current.space) return;
     playbackState = PlaybackState::Marking;
     phaseStartMs = now;
-    startTone();
+    startTone(current.sender);
     return;
   }
 
