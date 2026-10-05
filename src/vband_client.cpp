@@ -25,8 +25,9 @@ unsigned long lastUserListRequestMs = 0;
 VbandRxSpaceMarkCallback rxCallback = nullptr;
 
 // Public channels named on the site, followed by the custom room
-// (vbandSettingsRoom()) as the last cycle position so a fresh boot's
-// initial join lines up with vbandCycleChannel()'s next index.
+// (vbandSettingsRoom()) as the last cycle position, so a first boot (no
+// channel saved yet) starts on the custom room and the button then goes
+// to Channel 1. After that, boot rejoins the last channel joined.
 // "Channel 5 (ND)" is the site's actual name, not a typo.
 const char *PUBLIC_CHANNELS[] = {
     "Channel 1", "Channel 2", "Channel 3", "Channel 4", "Channel 5 (ND)",
@@ -81,6 +82,7 @@ void handleMessage(const String &msg) {
   } else if (cmd == "CJN" && n >= 2) {
     joined = true;
     joinedChannel = fields[1];
+    if (joinedChannel == currentChannel()) vbandSettingsSaveChannel(channelIndex);
     joinScreenPending = true;
     joinScreenFirst = !ready;
     joinedAtMs = millis();
@@ -144,6 +146,8 @@ void onWsEvent(WStype_t type, uint8_t *payload, size_t length) {
 }  // namespace
 
 void vbandBegin() {
+  int saved = vbandSettingsChannel();
+  if (saved >= 0 && saved < CHANNEL_CYCLE_COUNT) channelIndex = saved;
   displayVbandConnecting();
   ws.begin(VBAND_HOST, VBAND_PORT, VBAND_PATH, VBAND_PROTOCOL);
   ws.onEvent(onWsEvent);

@@ -17,6 +17,12 @@ const String &vbandSettingsName();
 // Custom room, the last stop in the channel button's cycle.
 const String &vbandSettingsRoom();
 
+// Position in the channel button's cycle last joined, so a reboot goes
+// back to it; -1 if none was saved yet (vband_client.cpp then starts on
+// the custom room). Saving the same value again doesn't write flash.
+int vbandSettingsChannel();
+void vbandSettingsSaveChannel(int channelIndex);
+
 // Saves new values. Commas (the VBand protocol's field separator) are
 // stripped and whitespace trimmed; a value that ends up empty leaves the
 // current setting unchanged.
