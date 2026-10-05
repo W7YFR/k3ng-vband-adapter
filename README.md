@@ -2,6 +2,8 @@
 
 Standalone ESP32 client for [VBand](https://hamradio.solutions/vband/): keys over WiFi via a straight key, cycles channels with a pushbutton, shows connection status on an LED, and plays back other users' code as an audio sidetone.
 
+Paired with a K3NG keyer (Arduino Mega, `w7yfr` branch with `FEATURE_VBAND_LINK`), it also becomes the keyer's VBand adapter: keying moves to VBand automatically while it's connected, the keyer's OLED shows WiFi/VBand status, who's in the room, and the conversation with each sender's tag, and the keyer can send it commands (see [Linking to the K3NG keyer](#linking-to-the-k3ng-keyer)).
+
 ## Pinout (Wemos D1 Mini32)
 
 | Signal | GPIO | Notes |
@@ -13,6 +15,71 @@ Standalone ESP32 client for [VBand](https://hamradio.solutions/vband/): keys ove
 | Sidetone audio out | 25 | Built-in DAC1 output -- see wiring below |
 | Keyer link TX | 18 (D5) | `Serial2` TX to Mega RX2 (D17) through a 10k series resistor -- see `pins.h` |
 | Keyer link RX | 19 (D6) | `Serial2` RX from Mega TX2 (D16) through a 10k/20k divider (5V -> 3.3V) |
+
+## Linking to the K3NG keyer
+
+A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be powered on or off at any time; the ESP32 always talks first, and the keyer keeps its TX pin high-impedance until it hears it.
+
+**Wiring** (Mega is 5V, ESP32 is 3.3V, so the Mega -> ESP32 lines go through dividers):
+
+```
+  Mega D16 (TX2) ──[10k]──●── GPIO19 (link RX)        Mega D7 (VBand key line) ──[10k]──●── GPIO22 (key)
+                          │                                                             │
+                        [20k]                                                         [20k]
+                          │                                                             │
+                         GND                                                           GND
+
+  GPIO18 (link TX) ──[10k]── Mega D17 (RX2)           Mega GND ── ESP32 GND
+```
+
+**What it does:**
+- **Keying:** while the ESP32 reports VBand is ready (joined a channel), the keyer moves keying to its VBand line (TX 2, Mega D7) and back to the radio (TX 1) when VBand goes away. It switches only between characters and doesn't save the change.
+- **Status screens** on the keyer's OLED: WiFi, the setup portal, VBand connecting/offline/lost, the channel joined and who's in it, OTA progress.
+- **The conversation:** other users' sending is decoded on the ESP32 (a port of VBand's own adaptive decoder) as the sidetone plays it, and shown with a tag for each sender: their callsign if their VBand name has one, otherwise the start of their name. Each change of sender starts a new line; your own sending shows as `ME>`. On no-decode channels (`... (ND)`) only the tag is shown.
+- **Joins and leaves:** "X joined" / "X left" lines. The server doesn't push room changes, so the user list is polled every 30 s.
+- Status screens you asked for aren't wiped by incoming text; the conversation shows again when they time out.
+
+**Keyer commands.** In the keyer's command mode, key `/` then a word and pause for a word space. The keyer checks the word with the ESP32 first: an unknown one shows "Unknown /XYZ" and stays in command mode to try again; a known one leaves command mode and runs.
+
+| Command | Does |
+|---|---|
+| `/WHO` | Current channel and who's in it |
+| `/CH` | Next channel |
+| `/CH1`-`/CH5`, `/CHC` | Jump to a public channel, or `C` for your custom room |
+| `/OTA` | Listen for an OTA update for 10 minutes (shows the IP); see `OTA_ALWAYS_ON` |
+| `/AP` | Restart into the WiFi / VBand settings portal |
+| `/OFF` | Power off (on USB it can't, and says so) |
+| `/DIAG` | Signal, uptime, disconnects, worst gap in received sending, dropped elements |
+| `/H` | The list |
+
+**Protocol.** Frames are `$TYPE,fields*XX\n`, `XX` being the XOR of the bytes between `$` and `*` in hex; anything malformed is dropped. Either side's link is "up" while frames keep arriving (6 s timeout).
+
+| Direction | Frame | Meaning |
+|---|---|---|
+| both | `HI,<version>` | Heartbeat: ESP32 every 1 s until answered, then 2 s |
+| ESP -> keyer | `VB,1` / `VB,0` | VBand usable or not; sent on change and with every heartbeat |
+| ESP -> keyer | `ST,<ms>,<row>\|<row>...` | Status screen, up to 4 rows |
+| ESP -> keyer | `RX,<tag>,<text>` | Decoded text from another station |
+| ESP -> keyer | `SYS,<text>` | A line of its own, e.g. "X joined" |
+| ESP -> keyer | `BYE,<reason>` | About to reboot or power off (`OTA`, `OFF`, `AP`) |
+| keyer -> ESP | `CK,<word>` | Is this a command? |
+| ESP -> keyer | `CR,1` / `CR,0` | Known / unknown |
+| keyer -> ESP | `CMD,<word>` | Run it (sent after leaving command mode) |
+
+## Channel button
+
+- **Press:** shows the current channel and who's in it on the keyer.
+- **Press again within 10 s** (`CHANNEL_SWITCH_WINDOW_MS`) of the last press: next channel (Channel 1-4, Channel 5 (ND), your custom room, around again). Presses act on release.
+- **Hold 2 s:** power off (the LED flashes until you let go). On USB power it can't cut its own power, so after a moment it carries on and the keyer shows "Still Powered".
+- **Hold through power-on:** opens the WiFi / VBand settings portal (or key `/AP`).
+
+The last channel joined is remembered and rejoined after a reboot.
+
+## Status LED
+
+- Blinking slowly: WiFi not connected. Blinking faster: WiFi up, not joined.
+- After each join, flashes the channel number (or `C`) in Morse.
+- While joined, lights with your keying (`LED_FOLLOWS_KEY`).
 
 ## Soft power latch
 
@@ -56,13 +123,18 @@ Check your actual parts' datasheets for lead order (E/B/C, G/D/S) -- this gives 
 
 ## Feeding the sidetone audio into your amp
 
-`PIN_AUDIO_OUT` (GPIO25) drives one of the ESP32's built-in 8-bit DACs, synthesizing a 700 Hz tone for code received from other users (see `sidetone.cpp`). It's meant to be summed into the **same amplifier/speaker circuit your keyer's own sidetone already feeds** -- not wired into a port on the keyer itself.
+`PIN_AUDIO_OUT` (GPIO25) drives one of the ESP32's built-in 8-bit DACs, synthesizing a sine-wave tone for code received from other users (see `sidetone.cpp`).
+
+- **A pitch per sender** (`AUDIO_TONE_PER_SENDER`, `AUDIO_SENDER_TONES_HZ`) so several people in a room can be told apart: the first sender heard gets 700 Hz, the next 550, 850, 600, 800 Hz and so on.
+- **Fade in and out** over 5 ms (`AUDIO_RAMP_MS`, a raised-cosine envelope) instead of switching at full level, which clicks.
+- **Timing:** elements are replayed at the sender's own timing, never faster. If the network delivers a burst after a stall, playback runs behind until the sender's next pause, then catches up (silence that has already gone by isn't replayed). Up to 128 elements are held (`AUDIO_QUEUE_CAPACITY`).
+- The sample interrupt runs at 20 kHz, only while a tone is playing or fading out. It's meant to be summed into the **same amplifier/speaker circuit your keyer's own sidetone already feeds** -- not wired into a port on the keyer itself.
 
 This has been wired against a specific build: a K3NG keyer (Arduino Mega) whose sidetone already runs `D52 (VOL POT) -> pot wiper -> C4 (3.3uF) -> R3 (4.7k) -> LM386 IN`. Adjust component references below if your build differs, but the approach generalizes: splice a second AC-coupled source into whatever node already feeds your amp's input.
 
 **Splice point:** the junction where C4 meets R3. D52's active drive is already blocked by C4 before reaching that point, so it's a purely passive AC node from the Mega's side.
 
-**Why the ESP32 branch needs its own resistor, not just P3.** GPIO25 is not a quiet, high-impedance pin when it's not playing a tone -- `sidetone.cpp`'s timer interrupt rewrites the DAC output continuously, 40,000 times a second, whether or not a tone is sounding. It's always a stiff, low-impedance point, the same as D52 is. R3 protects the Mega's own signal from D52's stiff output, but R3 is now shared, so it doesn't protect the Mega's signal *from the ESP32 branch*. Without a resistor of its own, the only thing standing between the shared node and GPIO25 is P3's own resistance -- which goes to ~0 ohms at full volume. At that setting, `shared node -> C8 -> P3 -> GPIO25` becomes a low-impedance path that siphons the Mega's own signal off to GPIO25's fixed output instead of letting it continue to R3/LM386, silencing it. **R8** fixes this: a fixed resistor between C8 and the shared node, sized meaningfully larger than R3 (start around 22k) so it doesn't out-compete the Mega's path into R3 even at P3's lowest-resistance setting. The trade-off is the same resistor also attenuates the ESP32's own tone somewhat -- normal for a passive mixer, and tunable: raise R8 if the Mega's sidetone is still being pulled down at high P3 settings, lower it if the ESP32's own tone is too quiet.
+**Why the ESP32 branch needs its own resistor, not just P3.** GPIO25 is never a quiet, high-impedance pin -- between tones the DAC holds it at a fixed mid-scale level, and during them it drives the tone. It's always a stiff, low-impedance point, the same as D52 is. R3 protects the Mega's own signal from D52's stiff output, but R3 is now shared, so it doesn't protect the Mega's signal *from the ESP32 branch*. Without a resistor of its own, the only thing standing between the shared node and GPIO25 is P3's own resistance -- which goes to ~0 ohms at full volume. At that setting, `shared node -> C8 -> P3 -> GPIO25` becomes a low-impedance path that siphons the Mega's own signal off to GPIO25's fixed output instead of letting it continue to R3/LM386, silencing it. **R8** fixes this: a fixed resistor between C8 and the shared node, sized meaningfully larger than R3 (start around 22k) so it doesn't out-compete the Mega's path into R3 even at P3's lowest-resistance setting. The trade-off is the same resistor also attenuates the ESP32's own tone somewhat -- normal for a passive mixer, and tunable: raise R8 if the Mega's sidetone is still being pulled down at high P3 settings, lower it if the ESP32's own tone is too quiet.
 
 **New parts** (continuing the existing C1-C6/R1-R7 numbering):
 - **P3** -- a second volume knob just for the VBand tone: a 10k linear trimmer or panel pot, wired the same way as P2 (GPIO25 drives the wiper directly, one outer leg to GND, other outer leg continuing on). It's not tied to the same physical knob as the keyer's own sidetone (P2). 
@@ -93,3 +165,23 @@ pio run -e wemos_d1_mini32_ota -t upload   # OTA -- see scripts/README.md for .e
 ```
 
 The `VBand-ESP32` setup hotspot's password defaults to `w7yfr-vband`; override it with `WIFI_MANAGER_AP_PASSWORD` in `.env` (8+ characters).
+
+OTA listens all the time while `OTA_ALWAYS_ON` is defined in `config.h`. Comment it out and the board only listens for 10 minutes after `/OTA` is keyed on the keyer (`OTA_WINDOW_MS`); a window never cuts off an update in progress.
+
+## Diagnostics
+
+With `DIAGNOSTICS_LOG` defined (the default), the USB serial port gets a `DIAG` line every 5 s -- WiFi signal, free heap, the slowest pass through each part of `loop()`, how other users' keying is arriving (count, longest gap between elements and between any server messages), how far playback is behind, dropped elements, disconnects -- plus a line for each WiFi or VBand drop with its reason. Nothing reads it without a serial monitor, so it costs next to nothing otherwise. To capture a log:
+
+```bash
+pio device monitor -e wemos_d1_mini32 | tee diag-log.txt   # -e: the default env is OTA
+```
+
+`/DIAG` on the keyer shows a summary on its display.
+
+## Notes for future changes
+
+Lessons from building this, so they aren't relearned:
+- **Don't call `dacWrite()` from an interrupt.** In this core (2.0.17) it redoes the DAC pad setup on every call; at audio rates that starved `loop()` and looked like random hangs. `sidetone.cpp` writes the DAC register directly from IRAM.
+- **Don't trust disabling the timer alarm to stop a tone.** The timer driver re-arms an auto-reload alarm after each interrupt, so a stop can lose the race and leave the tone running. The interrupt checks its own on/off flag.
+- **Time the key line in an interrupt.** Polling it from `loop()` lost whole elements while `ws.sendTXT()` waited on the network.
+- **Keep WiFi modem sleep off.** It delayed and lost received packets, and the losses stalled the VBand connection for seconds while TCP retransmitted.
