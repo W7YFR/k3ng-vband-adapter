@@ -11,7 +11,7 @@
 
 void diagnosticsBegin();
 
-// A few rows for the keyer's display ("/DIAG"): signal and uptime,
+// A few rows for the keyer's display ("/DIAG"): firmware commit, signal, uptime,
 // disconnects, and the worst gap in someone's sending / playback drops
 // since boot.
 String diagnosticsSummary();

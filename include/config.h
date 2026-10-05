@@ -1,5 +1,16 @@
 #pragma once
 
+// The commit this firmware was built from ("+" if there were uncommitted
+// changes), shown on the keyer at boot and in /DIAG. platformio.ini sets
+// FIRMWARE_GIT_REV from git at build time.
+#define FIRMWARE_STRINGIFY(x) #x
+#define FIRMWARE_STRING(x) FIRMWARE_STRINGIFY(x)
+#ifdef FIRMWARE_GIT_REV
+#define FIRMWARE_VERSION FIRMWARE_STRING(FIRMWARE_GIT_REV)
+#else
+#define FIRMWARE_VERSION "unknown"
+#endif
+
 // WiFi is provisioned at runtime by WiFiManager (see wifi_setup.cpp),
 // not hardcoded here. On first boot, or whenever it can't reconnect, the
 // board opens an access point named below -- join it from a phone/laptop
@@ -161,7 +172,14 @@
 #define MEGA_LINK_HI_UP_MS 2000
 #define MEGA_LINK_TIMEOUT_MS 6000
 #define MEGA_LINK_MAX_FRAME 64
-#define MEGA_LINK_PROTOCOL_VERSION "1"
+// MEGA_LINK_PROTOCOL_VERSION is the version of the link's messages, sent
+// in HI by both sides; each warns on the keyer's display when the other's
+// differs, so flashing only one board after a breaking change says so.
+// Bump it only for changes the other side can't cope with (a changed
+// message format) -- new message types don't need it, since both sides
+// ignore types they don't know. Keep it in step with
+// VBAND_LINK_PROTOCOL_VERSION on the keyer.
+#define MEGA_LINK_PROTOCOL_VERSION 1
 
 // Columns on the keyer's display (its LCD_COLUMNS). Status screens are
 // cut to this width before sending, to keep frames short.

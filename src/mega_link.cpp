@@ -2,6 +2,7 @@
 #include "mega_link.h"
 #include "pins.h"
 #include "config.h"
+#include "display_events.h"
 
 namespace {
 
@@ -14,6 +15,7 @@ unsigned int badFrames = 0; // since the link last came up -- garbled on the wir
 bool vbandReady = false;
 unsigned long lastFrameMs = 0;
 unsigned long lastHiMs = 0;
+bool versionChecked = false; // since the link last came up
 
 // Bytes after the '$' of the frame being received.
 String rxFrame;
@@ -49,8 +51,26 @@ void sendVbandReady() {
   sendFrame(vbandReady ? "VB,1" : "VB,0");
 }
 
+// "HI,<protocol>". A keyer from before the protocol was checked sends its
+// K3NG version there instead (e.g. 2024.03.20.2239); that's protocol 1.
+int peerProtocol(const String &fields) {
+  int comma = fields.indexOf(',');
+  String protocol = comma < 0 ? fields : fields.substring(0, comma);
+  if (protocol.length() == 0 || protocol.indexOf('.') >= 0) return 1;
+  return protocol.toInt();
+}
+
+void checkVersion(const String &fields) {
+  if (versionChecked) return;
+  versionChecked = true;
+  int theirs = peerProtocol(fields);
+  if (theirs == MEGA_LINK_PROTOCOL_VERSION) return;
+  Serial.printf("Keyer link protocol %d, ours %d\n", theirs, MEGA_LINK_PROTOCOL_VERSION);
+  displayLinkMismatch(theirs, MEGA_LINK_PROTOCOL_VERSION);
+}
+
 void sendHi() {
-  sendFrame("HI," MEGA_LINK_PROTOCOL_VERSION);
+  sendFrame("HI," + String(MEGA_LINK_PROTOCOL_VERSION));
   sendVbandReady();
   lastHiMs = millis();
 }
@@ -62,6 +82,7 @@ void setLinkUp(bool up) {
     Serial.println("Mega link up");
     badFrames = 0;
   } else {
+    versionChecked = false; // whatever comes back may have been reflashed
     Serial.printf("Mega link down (%u bad frames from the keyer since it came up)\n", badFrames);
   }
 }
@@ -87,7 +108,10 @@ void handleFrame() {
   int comma = body.indexOf(',');
   String type = comma == -1 ? body : body.substring(0, comma);
   String fields = comma == -1 ? String() : body.substring(comma + 1);
-  if (type == "HI") return;
+  if (type == "HI") {
+    checkVersion(fields);
+    return;
+  }
   if (frameCallback) frameCallback(type, fields);
 }
 

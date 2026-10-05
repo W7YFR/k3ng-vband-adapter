@@ -26,6 +26,9 @@ void displayOtaDone();
 void displayOtaFailed();
 void displayCircuitTest();
 
+// The keyer speaks a different link protocol version than we do.
+void displayLinkMismatch(int keyerProtocol, int ourProtocol);
+
 // Current channel and who's in it; count -1 while the list isn't in yet.
 void displayRoom(const String &channel, int count, const String &tags);
 

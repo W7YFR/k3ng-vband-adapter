@@ -56,7 +56,7 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 
 | Direction | Frame | Meaning |
 |---|---|---|
-| both | `HI,<version>` | Heartbeat: ESP32 every 1 s until answered, then 2 s |
+| both | `HI,<protocol>` | Heartbeat: ESP32 every 1 s until answered, then 2 s. Each side warns on the OLED ("Link Mismatch / Update keyer" or "Update adapter") if the other's protocol version differs |
 | ESP -> keyer | `VB,1` / `VB,0` | VBand usable or not; sent on change and with every heartbeat |
 | ESP -> keyer | `ST,<ms>,<row>\|<row>...` | Status screen, up to 4 rows |
 | ESP -> keyer | `RX,<tag>,<text>` | Decoded text from another station |
@@ -65,6 +65,12 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 | keyer -> ESP | `CK,<word>` | Is this a command? |
 | ESP -> keyer | `CR,1` / `CR,0` | Known / unknown |
 | keyer -> ESP | `CMD,<word>` | Run it (sent after leaving command mode) |
+
+## Versions
+
+While this is being iterated on, build the adapter from the latest `main` and the keyer from the latest `w7yfr`. What has to match between them is the **link protocol** version: both sides send it in `HI` and warn on the keyer's display ("Link Mismatch / Update keyer" or "Update adapter") if they differ, so flashing only one board after a breaking change says so. It only changes when a message format changes in a way the other side can't handle -- new message types don't need it, since both sides ignore types they don't know. Bump `MEGA_LINK_PROTOCOL_VERSION` here and `VBAND_LINK_PROTOCOL_VERSION` in the keyer together.
+
+The adapter shows the commit it was built from (`+` if there were uncommitted changes) with the WiFi status at boot and in `/DIAG`, so after an OTA update you can see what's running.
 
 ## Channel button
 

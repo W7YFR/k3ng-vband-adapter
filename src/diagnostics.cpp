@@ -94,8 +94,8 @@ void diagnosticsNoteWsDisconnect() {
 
 String diagnosticsSummary() {
   char rows[64];
-  snprintf(rows, sizeof(rows), "WiFi %d up %lum|Drops ws%lu wifi%lu|Gap %lu.%lus lost %lu",
-           WiFi.RSSI(), millis() / 60000, wsDisconnects, wifiDisconnects,
+  snprintf(rows, sizeof(rows), "%s WiFi %d|Up %lum ws%lu wifi%lu|Gap %lu.%lus lost %lu",
+           FIRMWARE_VERSION, WiFi.RSSI(), millis() / 60000, wsDisconnects, wifiDisconnects,
            worstSmkGapMs / 1000, worstSmkGapMs % 1000 / 100, queueDrops);
   return rows;
 }

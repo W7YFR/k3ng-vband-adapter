@@ -42,7 +42,13 @@ void displayWifiPortal() {
 }
 
 void displayWifiConnected(const IPAddress &ip) {
-  show(SHOW_BRIEF_MS, "WiFi OK|" + ip.toString());
+  show(SHOW_BRIEF_MS, "WiFi OK|" + ip.toString() + "|Adapter " FIRMWARE_VERSION);
+}
+
+void displayLinkMismatch(int keyerProtocol, int ourProtocol) {
+  show(SHOW_ROOM_MS, String("Link Mismatch|") +
+                         (keyerProtocol < ourProtocol ? "Update keyer" : "Update adapter") +
+                         "|Keyer v" + keyerProtocol + " Adptr v" + ourProtocol);
 }
 
 void displayVbandJoined(const String &channel, bool firstJoin, const String &users) {
