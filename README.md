@@ -159,6 +159,8 @@ Turning P3 down shifts more of the AC signal to the grounded leg instead of on t
 
 ## Building & flashing
 
+The build scripts are a git submodule (`scripts/`), so clone with `git clone --recursive`, or run `git submodule update --init` after a plain clone.
+
 ```bash
 pio run -e wemos_d1_mini32 -t upload       # USB
 pio run -e wemos_d1_mini32_ota -t upload   # OTA -- see scripts/README.md for .env setup
