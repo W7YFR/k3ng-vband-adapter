@@ -155,7 +155,9 @@
 #define KEYER_DISPLAY_COLUMNS 18
 
 // Field diagnostics (diagnostics.cpp): a "DIAG ..." line on the USB
-// serial port every DIAGNOSTICS_INTERVAL_MS, plus one per WiFi/VBand drop.
-// Temporary, for tracking down connection drops; comment out when done.
+// serial port every DIAGNOSTICS_INTERVAL_MS, plus one per WiFi/VBand drop,
+// for tracking down stalls and drops under real traffic. Only seen with a
+// serial monitor attached; costs next to nothing otherwise. Comment out
+// to silence it.
 #define DIAGNOSTICS_LOG
 #define DIAGNOSTICS_INTERVAL_MS 5000
