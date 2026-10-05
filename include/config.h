@@ -37,19 +37,29 @@
 #define VBAND_DEFAULT_ROOM "tacos"
 #define VBAND_SETTING_MAX_LEN 32
 
-// CIRCUIT_TEST (power latch bench test, see circuit_test.cpp)
+// CIRCUIT_TEST (bench test of the power latch, key line and keyer link, see circuit_test.cpp)
 // When set, the board still connects to WiFi
 // and accepts OTA updates, but never joins VBand.
-// The button lights the LED while held.
+// The LED lights while the button is held or the key line is active,
+// and each button press sends the keyer a test status screen.
 // Run `pio run -e circuit_test -t upload` or set the define below:
 // #define CIRCUIT_TEST
 
 // Software debounce to prevent jitter
 #define DEBOUNCE_MS 5
 
+// The keying line idles LOW and goes HIGH while the key is down (the
+// keyer's dedicated tx_key_line_2 through a divider -- see pins.h).
+#define KEY_ACTIVE_HIGH true
+
 // Mechanical pushbuttons bounce longer than the keying line does, so the
 // channel button gets its own, looser debounce window.
 #define BUTTON_DEBOUNCE_MS 30
+
+// A channel button press after none for CHANNEL_SWITCH_WINDOW_MS shows the
+// current channel and who's in it; only a press within that time of the
+// last one moves to the next channel.
+#define CHANNEL_SWITCH_WINDOW_MS 10000
 
 // Holding the button this long powers the board off (power_latch.cpp);
 // the LED then flashes at POWER_OFF_FLASH_MS on/off until the button is
@@ -60,20 +70,52 @@
 // Status LED (led_indicator.cpp). Blink intervals are the on/off
 // duration in each state; MORSE_WPM sets the speed of the one-shot
 // channel-identifier flash played on every join confirmation.
+// While joined, the LED lights with your keying. Comment out to keep it off.
+#define LED_FOLLOWS_KEY
 #define LED_WIFI_DISCONNECTED_BLINK_MS 500
 #define LED_WIFI_CONNECTED_BLINK_MS 250
 #define MORSE_WPM 10
 
 // Sidetone audio (sidetone.cpp): pitch of the synthesized tone for
-// incoming code and the DAC sample rate it's synthesized at (a clean
+// incoming code -- one per received-text sender slot, so several people
+// in a room can be told apart by ear; the first sender heard gets
+// AUDIO_TONE_HZ. Comment out AUDIO_TONE_PER_SENDER for one pitch for
+// everyone. Then the DAC sample rate it's synthesized at (a clean
 // divisor of 1,000,000 so the sample timer's period is a whole number
 // of microseconds). AUDIO_QUEUE_CAPACITY caps how many received
 // space/mark pairs can be buffered awaiting playback -- if playback
 // ever falls behind arrival, the oldest queued pair is dropped rather
 // than growing unbounded.
 #define AUDIO_TONE_HZ 700
-#define AUDIO_SAMPLE_RATE_HZ 40000
-#define AUDIO_QUEUE_CAPACITY 32
+#define AUDIO_TONE_PER_SENDER
+// One per RX_TEXT_MAX_SENDERS slot; neighbours kept well apart.
+#define AUDIO_SENDER_TONES_HZ {AUDIO_TONE_HZ, 550, 850, 600, 800, 500, 900, 650}
+#define AUDIO_SAMPLE_RATE_HZ 20000
+// Each tone fades in and out over this long (a raised-cosine envelope)
+// instead of switching on and off at full level, which clicks.
+#define AUDIO_RAMP_MS 5
+#define AUDIO_QUEUE_CAPACITY 128 // ~15-25 characters; 12 bytes each
+
+// Received text (received_text.cpp): how many recent senders get their
+// own decoder at once (beyond that, the one heard from least recently is
+// reused), and the longest tag shown for a sender on the keyer.
+#define RX_TEXT_MAX_SENDERS 8
+#define RX_TEXT_TAG_MAX_LEN 7
+
+// Who's in the room (room_users.cpp). After joining a channel the join
+// screen waits up to JOIN_SCREEN_WAIT_MS for the server's user list so it
+// can include it. The list is asked for again whenever the server says
+// the channel's count changed, and every ROOM_USERS_POLL_MS regardless in
+// case it doesn't.
+#define JOIN_SCREEN_WAIT_MS 2000
+#define ROOM_USERS_POLL_MS 30000
+
+// Listen for OTA updates the whole time the board is running. Comment
+// out to listen only for OTA_WINDOW_MS after "/OTA" is keyed in the
+// keyer's command mode (or flash over USB). A window never cuts off an
+// update in progress, and a successful one reboots with it closed.
+#define OTA_ALWAYS_ON
+#define OTA_WINDOW_MS 600000
 
 // Over-the-air updates (ArduinoOTA). Hostname is what shows up for
 // `pio run -t upload --upload-port <hostname>.local` / Arduino IDE's
@@ -107,3 +149,28 @@
 // idle time since boot before your first keydown) becomes real playback
 // delay for everyone else and backs up everything queued behind it.
 #define MAX_TIME_MS 3000
+
+// Serial link to the K3NG keyer (mega_link.cpp). 38400 baud keeps the
+// Mega's 16MHz UART clock error around 0.2% (vs ~2% at 115200). The
+// ESP32 always talks first: it sends HI every MEGA_LINK_HI_DOWN_MS until
+// the keyer answers, then every MEGA_LINK_HI_UP_MS as a heartbeat. The
+// link counts as down after MEGA_LINK_TIMEOUT_MS without a valid frame
+// from the keyer. MEGA_LINK_MAX_FRAME caps one "$...*XX" frame in bytes.
+#define MEGA_LINK_BAUD 38400
+#define MEGA_LINK_HI_DOWN_MS 1000
+#define MEGA_LINK_HI_UP_MS 2000
+#define MEGA_LINK_TIMEOUT_MS 6000
+#define MEGA_LINK_MAX_FRAME 64
+#define MEGA_LINK_PROTOCOL_VERSION "1"
+
+// Columns on the keyer's display (its LCD_COLUMNS). Status screens are
+// cut to this width before sending, to keep frames short.
+#define KEYER_DISPLAY_COLUMNS 18
+
+// Field diagnostics (diagnostics.cpp): a "DIAG ..." line on the USB
+// serial port every DIAGNOSTICS_INTERVAL_MS, plus one per WiFi/VBand drop,
+// for tracking down stalls and drops under real traffic. Only seen with a
+// serial monitor attached; costs next to nothing otherwise. Comment out
+// to silence it.
+#define DIAGNOSTICS_LOG
+#define DIAGNOSTICS_INTERVAL_MS 5000

@@ -9,6 +9,10 @@
 // provisioning fails.
 void wifiConnect();
 
+// Restarts straight into the config portal ("/AP" keyed on the keyer),
+// as if the button had been held through boot. Doesn't return.
+void wifiRestartIntoPortal();
+
 // True if WiFi is currently associated. Reflects live status, not just
 // the initial wifiConnect() result -- WiFi can drop later at any time.
 bool wifiConnected();

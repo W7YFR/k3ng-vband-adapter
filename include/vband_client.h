@@ -14,19 +14,39 @@ void vbandSendSpaceMark(unsigned long space, unsigned long mark);
 // join it.
 void vbandCycleChannel();
 
+// Joins a channel by its vbandChannelCode() ('1'-'5', 'C'); false if
+// there's no such channel (vbandChannelCodeValid() checks without joining).
+bool vbandJoinChannelCode(char code);
+bool vbandChannelCodeValid(char code);
+
+// Shows the current channel and who's in it on the keyer, or why VBand
+// isn't connected.
+void vbandShowRoom();
+
 // True once the server has confirmed the join (CJN) for the current
 // CHANNEL_CYCLE position; false from the moment a join is requested
 // (including on vbandCycleChannel()) until that confirmation arrives.
 bool vbandIsJoined();
+
+// True from the first join confirmation after connecting until the
+// WebSocket disconnects. Unlike vbandIsJoined(), it stays true while
+// switching channels, so a channel change doesn't look like VBand going
+// away and back (the keyer would otherwise flip between key lines).
+bool vbandIsReady();
 
 // Single-character identifier for the current CHANNEL_CYCLE position,
 // for the status LED's Morse announcement: '1'-'5' for the numbered
 // channels, 'C' for the custom room (vbandSettingsRoom()).
 char vbandChannelCode();
 
+// Name of the current CHANNEL_CYCLE position, as the server knows it
+// (e.g. "Channel 5 (ND)" or the custom room).
+String vbandChannelName();
+
 // Registers a callback invoked once per inbound SMK from someone else in
-// the channel (never for this device's own keying), with that
-// transmission's original space/mark timing -- e.g. to play it back as
-// audio. Call once from setup(); pass nullptr to clear it.
-typedef void (*VbandRxSpaceMarkCallback)(unsigned long space, unsigned long mark);
+// the channel (never for this device's own keying), with who sent it and
+// that transmission's original space/mark timing -- e.g. to play it back
+// as audio. Call once from setup(); pass nullptr to clear it.
+typedef void (*VbandRxSpaceMarkCallback)(const String &userId, const String &userName,
+                                         unsigned long space, unsigned long mark);
 void vbandSetRxCallback(VbandRxSpaceMarkCallback callback);

@@ -3,6 +3,7 @@
 #include "wifi_setup.h"
 #include "vband_client.h"
 #include "power_latch.h"
+#include "keyer.h"
 #include "pins.h"
 #include "config.h"
 
@@ -133,6 +134,9 @@ void ledLoop() {
       updateAnnounce();
       break;
     case Mode::Idle:
+#ifdef LED_FOLLOWS_KEY
+      setLed(keyerKeyDown());
+#endif
       break;
   }
 }

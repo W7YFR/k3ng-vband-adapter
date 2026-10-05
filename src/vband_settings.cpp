@@ -8,9 +8,11 @@ namespace {
 constexpr const char *NVS_NAMESPACE = "vband";
 constexpr const char *KEY_NAME = "name";
 constexpr const char *KEY_ROOM = "room";
+constexpr const char *KEY_CHANNEL = "channel";
 
 String name;
 String room;
+int channel = -1;
 
 String sanitize(const String &value) {
   String out = value;
@@ -29,12 +31,13 @@ void vbandSettingsBegin() {
   prefs.begin(NVS_NAMESPACE, false);
   name = prefs.getString(KEY_NAME, "");
   room = prefs.getString(KEY_ROOM, VBAND_DEFAULT_ROOM);
+  channel = prefs.getInt(KEY_CHANNEL, -1);
   if (name.isEmpty()) {
     name = VBAND_DEFAULT_NAME_PREFIX + String(1000 + esp_random() % 9000);
     prefs.putString(KEY_NAME, name);
   }
   prefs.end();
-  Serial.println("VBand name: " + name + ", room: " + room);
+  Serial.println("VBand name: " + name + ", room: " + room + ", channel: " + String(channel));
 }
 
 const String &vbandSettingsName() {
@@ -43,6 +46,20 @@ const String &vbandSettingsName() {
 
 const String &vbandSettingsRoom() {
   return room;
+}
+
+int vbandSettingsChannel() {
+  return channel;
+}
+
+void vbandSettingsSaveChannel(int channelIndex) {
+  if (channelIndex == channel) return;
+  channel = channelIndex;
+  Preferences prefs;
+  prefs.begin(NVS_NAMESPACE, false);
+  prefs.putInt(KEY_CHANNEL, channel);
+  prefs.end();
+  Serial.println("Saved VBand channel: " + String(channel));
 }
 
 void vbandSettingsSave(const String &newName, const String &newRoom) {

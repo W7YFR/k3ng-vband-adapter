@@ -5,6 +5,8 @@
 #include "vband_settings.h"
 #include "power_latch.h"
 #include "led_patterns.h"
+#include "display_events.h"
+#include "mega_link.h"
 #include "pins.h"
 #include "config.h"
 
@@ -60,7 +62,28 @@ bool portalRequestedAtBoot() {
   return true;
 }
 
+// Set by wifiRestartIntoPortal(); RTC memory survives a software restart
+// but not a power cycle, and isn't cleared at boot.
+constexpr uint32_t PORTAL_REQUEST_MAGIC = 0x50525441;
+RTC_NOINIT_ATTR uint32_t portalRequest;
+
+bool portalRequestedByCommand() {
+  bool requested = portalRequest == PORTAL_REQUEST_MAGIC;
+  portalRequest = 0;
+  return requested;
+}
+
 }  // namespace
+
+void wifiRestartIntoPortal() {
+  Serial.println("Restarting into the config portal");
+  displayPortalRestart();
+  megaLinkSendBye("AP");
+  delay(100); // let the BYE and the screen out of the UART
+  portalRequest = PORTAL_REQUEST_MAGIC;
+  powerLatchHoldThroughRestart();
+  ESP.restart();
+}
 
 void wifiConnect() {
   WiFiManager wm;
@@ -76,17 +99,21 @@ void wifiConnect() {
   wm.setSaveParamsCallback([&]() {
     vbandSettingsSave(nameParam.getValue(), roomParam.getValue());
   });
-  wm.setAPCallback([](WiFiManager *) { startBlink(LED_PORTAL_BLINK_MS); });
+  wm.setAPCallback([](WiFiManager *) {
+    startBlink(LED_PORTAL_BLINK_MS);
+    displayWifiPortal();
+  });
 
   bool connected = false;
-  if (portalRequestedAtBoot()) {
-    Serial.println("Button held at boot, opening config portal");
+  if (portalRequestedByCommand() || portalRequestedAtBoot()) {
+    Serial.println("Opening config portal");
     connected = wm.startConfigPortal(WIFI_MANAGER_AP_NAME, WIFI_MANAGER_AP_PASSWORD);
     // Exited without saving: carry on with whatever WiFi is already saved.
   }
   if (!connected) {
     // Switches to the portal blink via the AP callback if it can't connect.
     startBlink(LED_WIFI_CONNECTING_BLINK_MS);
+    displayWifiConnecting();
     connected = wm.autoConnect(WIFI_MANAGER_AP_NAME, WIFI_MANAGER_AP_PASSWORD);
   }
   stopBlink();
@@ -95,7 +122,12 @@ void wifiConnect() {
     Serial.println("WiFi provisioning failed, restarting");
     ESP.restart();
   }
+  // Modem sleep (the ESP32 default) dozes between access point beacons;
+  // received packets get delayed or lost, and the lost ones stall the
+  // VBand connection for seconds while TCP backs off and retransmits.
+  WiFi.setSleep(false);
   Serial.println("WiFi connected: " + WiFi.localIP().toString());
+  displayWifiConnected(WiFi.localIP());
   ledFlashSuccess();
 }
 
