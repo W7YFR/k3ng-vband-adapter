@@ -11,3 +11,6 @@ typedef void (*KeyerSpaceMarkCallback)(unsigned long space, unsigned long mark);
 
 void keyerBegin();
 void keyerLoop(KeyerSpaceMarkCallback onSpaceMark);
+
+// True while the key line is active right now (not debounced).
+bool keyerKeyDown();

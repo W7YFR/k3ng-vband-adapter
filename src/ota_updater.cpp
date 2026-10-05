@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <ArduinoOTA.h>
+#include <WiFi.h>
 #include "ota_updater.h"
 #include "config.h"
 #include "power_latch.h"
@@ -13,7 +14,9 @@ namespace {
 // loop() is stuck in ArduinoOTA.handle() for the whole update, so nothing
 // else is driving the LED while these patterns run.
 
-bool otaActive = false;
+bool listening = false;
+bool windowOpen = false;
+unsigned long windowEndMs = 0;
 bool progressLedOn = false;
 unsigned long lastProgressToggleMs = 0;
 
@@ -40,13 +43,16 @@ void flashOtaFailure() {
   setLed(false);
 }
 
+void startListening() {
+  if (listening) return;
+  ArduinoOTA.begin();
+  listening = true;
+  Serial.println("OTA listening");
+}
+
 }  // namespace
 
 void otaBegin() {
-#ifndef OTA_ALWAYS_ON
-  return; // not listening for updates (see OTA_ALWAYS_ON in config.h)
-#endif
-  otaActive = true;
   ArduinoOTA.setHostname(OTA_HOSTNAME);
   if (strlen(OTA_PASSWORD) > 0) {
     ArduinoOTA.setPassword(OTA_PASSWORD);
@@ -81,11 +87,34 @@ void otaBegin() {
     displayOtaFailed(); // loop() resumes after this and restores "VB" from vbandIsReady()
     setLed(false);
     flashOtaFailure();
+    // Leave time to try again.
+    if (windowOpen && windowEndMs - millis() < OTA_WINDOW_MS / 2) windowEndMs = millis() + OTA_WINDOW_MS / 2;
   });
-  ArduinoOTA.begin();
+#ifdef OTA_ALWAYS_ON
+  startListening();
+#endif
+}
+
+void otaOpenWindow() {
+#ifdef OTA_ALWAYS_ON
+  displayOtaAlwaysOn(WiFi.localIP());
+#else
+  startListening();
+  windowOpen = true;
+  windowEndMs = millis() + OTA_WINDOW_MS;
+  displayOtaWindowOpen(WiFi.localIP(), OTA_WINDOW_MS / 60000);
+#endif
 }
 
 void otaLoop() {
-  if (!otaActive) return;
+  if (!listening) return;
+  // An update runs entirely inside handle(), so the window can't close on one.
   ArduinoOTA.handle();
+  if (windowOpen && (long)(millis() - windowEndMs) >= 0) {
+    ArduinoOTA.end();
+    listening = false;
+    windowOpen = false;
+    Serial.println("OTA window closed");
+    displayOtaWindowClosed();
+  }
 }

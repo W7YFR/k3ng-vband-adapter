@@ -68,6 +68,19 @@ bool roomUsersKnown() {
   return known;
 }
 
+String roomUsersTags() {
+  String tags;
+  for (const User &user : users) {
+    if (tags.length()) tags += ' ';
+    tags += user.tag;
+  }
+  return tags;
+}
+
+int roomUsersCount() {
+  return users.size();
+}
+
 String roomUsersSummary() {
   if (users.empty()) return "Nobody else here";
   String summary = String(users.size()) + " here:";

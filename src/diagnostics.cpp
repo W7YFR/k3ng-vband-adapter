@@ -22,6 +22,7 @@ int queueDepth = 0;
 int queueDepthMax = 0;
 unsigned long queueDrops = 0;
 unsigned long toneMs = 0;
+unsigned long worstSmkGapMs = 0;
 unsigned long wsDisconnects = 0;
 unsigned long wifiDisconnects = 0;
 
@@ -63,6 +64,7 @@ void diagnosticsNoteSmk() {
   // Gaps over 5s are the sender pausing, not the network.
   if (lastSmkMs && now - lastSmkMs < 5000 && now - lastSmkMs > smkGapMaxMs) {
     smkGapMaxMs = now - lastSmkMs;
+    if (smkGapMaxMs > worstSmkGapMs) worstSmkGapMs = smkGapMaxMs;
   }
   lastSmkMs = now;
   smkCount++;
@@ -88,6 +90,14 @@ void diagnosticsNoteWsDisconnect() {
                 millis() / 1000, lastServerMessageMs ? millis() - lastServerMessageMs : 0,
                 WiFi.RSSI());
 #endif
+}
+
+String diagnosticsSummary() {
+  char rows[64];
+  snprintf(rows, sizeof(rows), "WiFi %d up %lum|Drops ws%lu wifi%lu|Gap %lu.%lus lost %lu",
+           WiFi.RSSI(), millis() / 60000, wsDisconnects, wifiDisconnects,
+           worstSmkGapMs / 1000, worstSmkGapMs % 1000 / 100, queueDrops);
+  return rows;
 }
 
 void diagnosticsLoop() {

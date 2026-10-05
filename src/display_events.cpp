@@ -11,6 +11,7 @@ namespace {
 // returns; the keyer caps any duration at 60s.
 const unsigned long SHOW_BRIEF_MS = 3000;
 const unsigned long SHOW_UNTIL_REPLACED_MS = 60000;
+const unsigned long SHOW_ROOM_MS = 8000; // longer screens you asked for
 
 // rows: up to four rows separated by '|'. Each is cut to the keyer's
 // width (it would cut them there anyway) and the whole screen to what fits
@@ -84,6 +85,74 @@ void displayOtaFailed() {
 
 void displayCircuitTest() {
   show(SHOW_BRIEF_MS, "VBand Test Mode|Press button|for test screens");
+}
+
+// Words into rows of up to KEYER_DISPLAY_COLUMNS, '|'-separated.
+static String wrap(const String &words) {
+  String rows;
+  String row;
+  int start = 0;
+  while (start < (int)words.length()) {
+    int end = words.indexOf(' ', start);
+    if (end < 0) end = words.length();
+    String word = words.substring(start, end);
+    start = end + 1;
+    if (row.length() && row.length() + 1 + word.length() > KEYER_DISPLAY_COLUMNS) {
+      rows += (rows.length() ? "|" : "") + row;
+      row = "";
+    }
+    row += (row.length() ? " " : "") + word;
+  }
+  if (row.length()) rows += (rows.length() ? "|" : "") + row;
+  return rows;
+}
+
+void displayRoom(const String &channel, int count, const String &tags) {
+  String rows = channel + "|";
+  if (count < 0) {
+    rows += "Listing...";
+  } else if (count == 0) {
+    rows += "Nobody else here";
+  } else {
+    rows += String(count) + " here|" + wrap(tags);
+  }
+  show(SHOW_ROOM_MS, rows);
+}
+
+void displayOtaWindowOpen(const IPAddress &ip, unsigned long minutes) {
+  show(SHOW_ROOM_MS, "OTA Open|" + String(minutes) + " minutes|" + ip.toString());
+}
+
+void displayOtaAlwaysOn(const IPAddress &ip) {
+  show(SHOW_ROOM_MS, "OTA Always On|" + ip.toString());
+}
+
+void displayOtaWindowClosed() {
+  show(SHOW_BRIEF_MS, "OTA Closed");
+}
+
+void displayPortalRestart() {
+  show(SHOW_UNTIL_REPLACED_MS, "WiFi Setup|Restarting...");
+}
+
+void displayPowerOff() {
+  show(SHOW_UNTIL_REPLACED_MS, "VBand|Powering Off");
+}
+
+void displayPowerOffFailed() {
+  show(SHOW_BRIEF_MS, "Still Powered|(USB?) Staying On");
+}
+
+void displayDiagnostics(const String &rows) {
+  show(SHOW_ROOM_MS, rows);
+}
+
+void displayCommandHelp() {
+  show(SHOW_ROOM_MS, "/WHO /CH /CH1-5|/CHC /OTA /AP|/OFF /DIAG");
+}
+
+void displayUnknownCommand(const String &word) {
+  show(SHOW_BRIEF_MS, "Unknown Command|/" + word + "|/H for help");
 }
 
 void displayUserJoined(const String &tag) {

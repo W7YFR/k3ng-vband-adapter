@@ -9,7 +9,14 @@
 namespace {
 
 constexpr int SINE_TABLE_SIZE = 256; // one full cycle; index = top 8 bits of phase
-uint8_t sineTable[SINE_TABLE_SIZE];
+int8_t sineTable[SINE_TABLE_SIZE];
+
+// Tones fade in and out over RAMP_SAMPLES samples (AUDIO_RAMP_MS): the
+// sine is scaled by envelopeTable[envelopeStep], a raised-cosine rise from
+// 0 to 255. Switching a tone on or off at full level clicks.
+constexpr int RAMP_SAMPLES = AUDIO_RAMP_MS * AUDIO_SAMPLE_RATE_HZ / 1000;
+uint8_t envelopeTable[RAMP_SAMPLES + 1];
+volatile int envelopeStep = 0; // 0 = silent, RAMP_SAMPLES = full level
 
 static_assert(PIN_AUDIO_OUT == 25, "writeDac() drives DAC1, which is GPIO25");
 
@@ -40,33 +47,44 @@ void IRAM_ATTR writeDac(uint8_t value) {
   SET_PERI_REG_BITS(RTC_IO_PAD_DAC1_REG, RTC_IO_PDAC1_DAC, value, RTC_IO_PDAC1_DAC_S);
 }
 
-// Only runs while a tone is sounding (see startTone()/stopTone()).
+// Runs while a tone is sounding or fading out (see startTone()/stopTone()).
 void IRAM_ATTR onAudioTimer() {
-  if (!toneOn) {
-    writeDac(128);
+  int step = envelopeStep;
+  if (toneOn) {
+    if (step < RAMP_SAMPLES) envelopeStep = ++step;
+  } else if (step > 0) {
+    envelopeStep = --step;
+  } else {
+    writeDac(128); // faded out; idle at mid-scale until sidetoneLoop() stops the timer
     return;
   }
-  writeDac(sineTable[phaseAccumulator >> 24]);
+  writeDac(128 + ((sineTable[phaseAccumulator >> 24] * envelopeTable[step]) >> 8));
   phaseAccumulator += phaseIncrement;
 }
 
 void startTone(uint8_t sender) {
   phaseIncrement = (uint32_t)(((uint64_t)toneHz(sender) << 32) / AUDIO_SAMPLE_RATE_HZ);
-  phaseAccumulator = 0;
+  if (envelopeStep == 0) phaseAccumulator = 0; // mid-fade, carry on from where the wave is
   toneOn = true;
   timerAlarmEnable(audioTimer);
 }
 
-// The timer driver turns the alarm back on after each interrupt (it's
-// auto-reload), so a sample interrupt landing just as the alarm is
-// disabled can leave it running -- before toneOn, that kept the tone
-// sounding until the next element finished, seconds later across a
-// pause. Now such a stray interrupt only holds the DAC at mid-scale, and
-// sidetoneLoop() switches the timer off again.
+// Starts the fade-out; the timer keeps running until it's done, then
+// stopTimerWhenSilent() turns it off.
 void stopTone() {
   toneOn = false;
-  timerAlarmDisable(audioTimer);
-  writeDac(128); // back to the idle mid-scale level
+}
+
+// The timer is only stopped from loop(), once the fade-out is over. The
+// timer driver turns the alarm back on after each interrupt (it's
+// auto-reload), so a sample interrupt landing just as the alarm is
+// disabled can leave it running; that's why the interrupt checks toneOn
+// rather than relying on the timer being off, and this keeps checking.
+void stopTimerWhenSilent() {
+  if (!toneOn && envelopeStep == 0 && timerAlarmEnabled(audioTimer)) {
+    timerAlarmDisable(audioTimer);
+    writeDac(128);
+  }
 }
 
 // Ring buffer of space/mark pairs awaiting playback, oldest first.
@@ -104,8 +122,11 @@ SidetonePlayedCallback playedCallback = nullptr;
 void sidetoneBegin() {
   for (int i = 0; i < SINE_TABLE_SIZE; i++) {
     float angle = 2.0f * PI * i / SINE_TABLE_SIZE;
-    int8_t sample = (int8_t)(127.0f * sinf(angle));
-    sineTable[i] = (uint8_t)(128 + sample);
+    sineTable[i] = (int8_t)(127.0f * sinf(angle));
+  }
+  for (int i = 0; i <= RAMP_SAMPLES; i++) {
+    float rise = RAMP_SAMPLES ? (1.0f - cosf(PI * i / RAMP_SAMPLES)) / 2 : 1.0f;
+    envelopeTable[i] = (uint8_t)(255.0f * rise + 0.5f);
   }
   dacWrite(PIN_AUDIO_OUT, 128); // enables the DAC pad once; writeDac() just updates its level
 
@@ -137,8 +158,9 @@ void sidetoneQueueSpaceMark(unsigned long space, unsigned long mark, uint8_t sen
 void sidetoneLoop() {
   unsigned long now = millis();
 
+  stopTimerWhenSilent();
+
   if (playbackState == PlaybackState::Idle) {
-    if (toneOn == false && timerAlarmEnabled(audioTimer)) timerAlarmDisable(audioTimer);
     if (queueCount == 0) return;
     current = queue[queueHead];
     queueHead = (queueHead + 1) % AUDIO_QUEUE_CAPACITY;

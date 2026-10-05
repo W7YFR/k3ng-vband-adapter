@@ -73,6 +73,10 @@ void keyerBegin() {
   attachInterrupt(digitalPinToInterrupt(PIN_KEY), onKeyEdge, CHANGE);
 }
 
+bool keyerKeyDown() {
+  return lineActive();
+}
+
 void keyerLoop(KeyerSpaceMarkCallback onSpaceMark) {
   while (edgeTail != edgeHead) {
     KeyEdge edge = {edges[edgeTail].atUs, edges[edgeTail].down};

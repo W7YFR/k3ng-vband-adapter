@@ -23,3 +23,7 @@ bool roomUsersKnown();
 
 // For the join screen, e.g. "2 here: RXXX K1ABC" or "Nobody else here".
 String roomUsersSummary();
+
+// Everyone else's tags, space-separated ("" if nobody).
+String roomUsersTags();
+int roomUsersCount();

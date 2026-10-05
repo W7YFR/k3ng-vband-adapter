@@ -14,6 +14,15 @@ void vbandSendSpaceMark(unsigned long space, unsigned long mark);
 // join it.
 void vbandCycleChannel();
 
+// Joins a channel by its vbandChannelCode() ('1'-'5', 'C'); false if
+// there's no such channel (vbandChannelCodeValid() checks without joining).
+bool vbandJoinChannelCode(char code);
+bool vbandChannelCodeValid(char code);
+
+// Shows the current channel and who's in it on the keyer, or why VBand
+// isn't connected.
+void vbandShowRoom();
+
 // True once the server has confirmed the join (CJN) for the current
 // CHANNEL_CYCLE position; false from the moment a join is requested
 // (including on vbandCycleChannel()) until that confirmation arrives.

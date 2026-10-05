@@ -26,6 +26,20 @@ void displayOtaDone();
 void displayOtaFailed();
 void displayCircuitTest();
 
+// Current channel and who's in it; count -1 while the list isn't in yet.
+void displayRoom(const String &channel, int count, const String &tags);
+
+// Answers to commands keyed in the keyer's command mode ("/OTA" etc.).
+void displayOtaWindowOpen(const IPAddress &ip, unsigned long minutes);
+void displayOtaAlwaysOn(const IPAddress &ip);
+void displayOtaWindowClosed();
+void displayPortalRestart();
+void displayPowerOff();
+void displayPowerOffFailed();
+void displayDiagnostics(const String &rows);
+void displayCommandHelp();
+void displayUnknownCommand(const String &word);
+
 // Lines of their own in the keyer's scrolling conversation ("SYS"
 // frames), rather than status screens.
 void displayUserJoined(const String &tag);

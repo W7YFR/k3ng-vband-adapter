@@ -6,6 +6,7 @@
 #include "power_latch.h"
 #include "led_patterns.h"
 #include "display_events.h"
+#include "mega_link.h"
 #include "pins.h"
 #include "config.h"
 
@@ -61,7 +62,28 @@ bool portalRequestedAtBoot() {
   return true;
 }
 
+// Set by wifiRestartIntoPortal(); RTC memory survives a software restart
+// but not a power cycle, and isn't cleared at boot.
+constexpr uint32_t PORTAL_REQUEST_MAGIC = 0x50525441;
+RTC_NOINIT_ATTR uint32_t portalRequest;
+
+bool portalRequestedByCommand() {
+  bool requested = portalRequest == PORTAL_REQUEST_MAGIC;
+  portalRequest = 0;
+  return requested;
+}
+
 }  // namespace
+
+void wifiRestartIntoPortal() {
+  Serial.println("Restarting into the config portal");
+  displayPortalRestart();
+  megaLinkSendBye("AP");
+  delay(100); // let the BYE and the screen out of the UART
+  portalRequest = PORTAL_REQUEST_MAGIC;
+  powerLatchHoldThroughRestart();
+  ESP.restart();
+}
 
 void wifiConnect() {
   WiFiManager wm;
@@ -83,8 +105,8 @@ void wifiConnect() {
   });
 
   bool connected = false;
-  if (portalRequestedAtBoot()) {
-    Serial.println("Button held at boot, opening config portal");
+  if (portalRequestedByCommand() || portalRequestedAtBoot()) {
+    Serial.println("Opening config portal");
     connected = wm.startConfigPortal(WIFI_MANAGER_AP_NAME, WIFI_MANAGER_AP_PASSWORD);
     // Exited without saving: carry on with whatever WiFi is already saved.
   }

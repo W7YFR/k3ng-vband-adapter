@@ -175,11 +175,35 @@ void vbandSendSpaceMark(unsigned long space, unsigned long mark) {
   ws.sendTXT("SM," + String(space) + "," + String(mark));
 }
 
-void vbandCycleChannel() {
-  channelIndex = (channelIndex + 1) % CHANNEL_CYCLE_COUNT;
+static void joinChannelIndex(int index) {
+  channelIndex = index;
   joined = false; // gate SM sends until CJN confirms the new channel
   Serial.println("Switching to channel " + currentChannel());
   ws.sendTXT("JC," + currentChannel());
+}
+
+void vbandCycleChannel() {
+  joinChannelIndex((channelIndex + 1) % CHANNEL_CYCLE_COUNT);
+}
+
+bool vbandChannelCodeValid(char code) {
+  code = toupper(code);
+  return code == 'C' || (code >= '1' && code < '1' + PUBLIC_CHANNEL_COUNT);
+}
+
+bool vbandJoinChannelCode(char code) {
+  if (!vbandChannelCodeValid(code)) return false;
+  code = toupper(code);
+  joinChannelIndex(code == 'C' ? CHANNEL_CYCLE_COUNT - 1 : code - '1');
+  return true;
+}
+
+void vbandShowRoom() {
+  if (!joined) {
+    displayVbandUnreachable(wifiConnected());
+    return;
+  }
+  displayRoom(joinedChannel, roomUsersKnown() ? roomUsersCount() : -1, roomUsersTags());
 }
 
 bool vbandIsJoined() {

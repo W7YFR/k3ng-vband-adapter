@@ -10,6 +10,11 @@
 // its reason. The note*() calls are cheap and harmless with it off.
 
 void diagnosticsBegin();
+
+// A few rows for the keyer's display ("/DIAG"): signal and uptime,
+// disconnects, and the worst gap in someone's sending / playback drops
+// since boot.
+String diagnosticsSummary();
 void diagnosticsLoop();
 
 // Times one part of loop(): diagnosticsStageStart() before it,

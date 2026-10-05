@@ -10,11 +10,28 @@
 #include "mega_link.h"
 #include "received_text.h"
 #include "diagnostics.h"
+#include "keyer_commands.h"
+#include "config.h"
 
 namespace {
 
 void onVbandRx(const String &userId, const String &userName, unsigned long space, unsigned long mark) {
   sidetoneQueueSpaceMark(space, mark, receivedTextSender(userId, userName));
+}
+
+// A press after a quiet spell shows where you are; pressing again within
+// CHANNEL_SWITCH_WINDOW_MS of the last press moves to the next channel.
+void onChannelButton() {
+  static bool pressedBefore = false;
+  static unsigned long lastPressMs = 0;
+  bool switching = pressedBefore && millis() - lastPressMs < CHANNEL_SWITCH_WINDOW_MS;
+  pressedBefore = true;
+  lastPressMs = millis();
+  if (switching) {
+    vbandCycleChannel();
+  } else {
+    vbandShowRoom();
+  }
 }
 
 }  // namespace
@@ -27,6 +44,7 @@ void vbandAppBegin() {
   vbandSetRxCallback(onVbandRx);
   sidetoneSetPlayedCallback(receivedTextPlayed);
   megaLinkBegin(); // before wifiConnect(), which blocks
+  keyerCommandsBegin();
   diagnosticsBegin();
 
   wifiConnect();
@@ -52,7 +70,7 @@ void vbandAppLoop() {
   receivedTextLoop();
   diagnosticsStageEnd(DIAG_RXTEXT);
   diagnosticsStageStart();
-  channelButtonLoop(vbandCycleChannel);
+  channelButtonLoop(onChannelButton);
   ledLoop();
   otaLoop();
   diagnosticsStageEnd(DIAG_OTHER);

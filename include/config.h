@@ -56,6 +56,11 @@
 // channel button gets its own, looser debounce window.
 #define BUTTON_DEBOUNCE_MS 30
 
+// A channel button press after none for CHANNEL_SWITCH_WINDOW_MS shows the
+// current channel and who's in it; only a press within that time of the
+// last one moves to the next channel.
+#define CHANNEL_SWITCH_WINDOW_MS 10000
+
 // Holding the button this long powers the board off (power_latch.cpp);
 // the LED then flashes at POWER_OFF_FLASH_MS on/off until the button is
 // released and power drops.
@@ -65,6 +70,8 @@
 // Status LED (led_indicator.cpp). Blink intervals are the on/off
 // duration in each state; MORSE_WPM sets the speed of the one-shot
 // channel-identifier flash played on every join confirmation.
+// While joined, the LED lights with your keying. Comment out to keep it off.
+#define LED_FOLLOWS_KEY
 #define LED_WIFI_DISCONNECTED_BLINK_MS 500
 #define LED_WIFI_CONNECTED_BLINK_MS 250
 #define MORSE_WPM 10
@@ -84,6 +91,9 @@
 // One per RX_TEXT_MAX_SENDERS slot; neighbours kept well apart.
 #define AUDIO_SENDER_TONES_HZ {AUDIO_TONE_HZ, 550, 850, 600, 800, 500, 900, 650}
 #define AUDIO_SAMPLE_RATE_HZ 20000
+// Each tone fades in and out over this long (a raised-cosine envelope)
+// instead of switching on and off at full level, which clicks.
+#define AUDIO_RAMP_MS 5
 #define AUDIO_QUEUE_CAPACITY 128 // ~15-25 characters; 12 bytes each
 
 // Received text (received_text.cpp): how many recent senders get their
@@ -101,8 +111,11 @@
 #define ROOM_USERS_POLL_MS 30000
 
 // Listen for OTA updates the whole time the board is running. Comment
-// out to turn OTA off (it can then only be flashed over USB).
+// out to listen only for OTA_WINDOW_MS after "/OTA" is keyed in the
+// keyer's command mode (or flash over USB). A window never cuts off an
+// update in progress, and a successful one reboots with it closed.
 #define OTA_ALWAYS_ON
+#define OTA_WINDOW_MS 600000
 
 // Over-the-air updates (ArduinoOTA). Hostname is what shows up for
 // `pio run -t upload --upload-port <hostname>.local` / Arduino IDE's
