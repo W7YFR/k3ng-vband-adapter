@@ -40,7 +40,7 @@ void sendListItem(int i) {
 }
 
 void sendValue(const String &key, int i) {
-  megaLinkSend("SV", key + "," + (i < 0 ? String("?") : String(adapterSettingValueAt(i))));
+  megaLinkSend("SV", key + "," + (i < 0 ? String("?") : adapterSettingValueText(i)));
 }
 
 String normalize(String word) {
@@ -103,7 +103,7 @@ void onKeyerFrame(const String &type, const String &fields) {
   } else if (type == "SS") {
     int comma = fields.indexOf(',');
     String key = normalize(comma < 0 ? fields : fields.substring(0, comma));
-    int i = comma < 0 ? -1 : adapterSettingSet(key, fields.substring(comma + 1).toInt());
+    int i = comma < 0 ? -1 : adapterSettingSet(key, fields.substring(comma + 1));
     sendValue(key, i);
   }
 }

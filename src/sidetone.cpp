@@ -31,9 +31,11 @@ constexpr uint16_t SENDER_TONES_HZ[] = AUDIO_SENDER_TONES_HZ;
 static_assert(sizeof(SENDER_TONES_HZ) / sizeof(SENDER_TONES_HZ[0]) == RX_TEXT_MAX_SENDERS,
               "AUDIO_SENDER_TONES_HZ needs one pitch per RX_TEXT_MAX_SENDERS slot");
 
+// The first sender heard (and everyone, with VB.PITCH off) gets the
+// VB.TONE setting's pitch; the rest get AUDIO_SENDER_TONES_HZ's.
 uint32_t toneHz(uint8_t sender) {
-  if (adapterSetting(AdapterSetting::Pitch) && sender < RX_TEXT_MAX_SENDERS) return SENDER_TONES_HZ[sender];
-  return AUDIO_TONE_HZ;
+  if (adapterSetting(AdapterSetting::Pitch) && sender > 0 && sender < RX_TEXT_MAX_SENDERS) return SENDER_TONES_HZ[sender];
+  return adapterSetting(AdapterSetting::Tone);
 }
 
 // One register write, from IRAM. dacWrite() re-runs the DAC pad setup

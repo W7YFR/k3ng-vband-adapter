@@ -91,9 +91,10 @@
 
 // Sidetone audio (sidetone.cpp): pitch of the synthesized tone for
 // incoming code -- one per received-text sender slot, so several people
-// in a room can be told apart by ear; the first sender heard gets
-// AUDIO_TONE_HZ. Pitch per sender is a setting (VB.PITCH, off = everyone
-// at AUDIO_TONE_HZ); AUDIO_TONE_PER_SENDER_DEFAULT is its default. Then the
+// in a room can be told apart by ear; the first sender heard gets the
+// VB.TONE setting's pitch (AUDIO_TONE_HZ is its default). Pitch per sender
+// is a setting too (VB.PITCH, off = everyone at VB.TONE);
+// AUDIO_TONE_PER_SENDER_DEFAULT is its default. Then the
 // DAC sample rate it's synthesized at (a clean
 // divisor of 1,000,000 so the sample timer's period is a whole number
 // of microseconds). AUDIO_QUEUE_CAPACITY caps how many received
@@ -102,7 +103,8 @@
 // than growing unbounded.
 #define AUDIO_TONE_HZ 700
 #define AUDIO_TONE_PER_SENDER_DEFAULT true
-// One per RX_TEXT_MAX_SENDERS slot; neighbours kept well apart.
+// One per RX_TEXT_MAX_SENDERS slot; neighbours kept well apart. The first
+// is replaced by VB.TONE.
 #define AUDIO_SENDER_TONES_HZ {AUDIO_TONE_HZ, 550, 850, 600, 800, 500, 900, 650}
 #define AUDIO_SAMPLE_RATE_HZ 20000
 // Each tone fades in and out (a raised-cosine envelope) instead of

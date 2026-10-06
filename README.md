@@ -56,15 +56,20 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 
 | Setting | Default | |
 |---|---|---|
+| `vb.name` | set in the portal | Your VBand name (spaces removed); changing it reconnects |
+| `vb.room` | set in the portal | Your custom room (spaces removed); rejoined if you're in it |
 | `vb.led` | on | The LED follows your keying while joined |
-| `vb.pitch` | on | A pitch per sender (off: everyone at 700 Hz) |
+| `vb.pitch` | on | A pitch per sender (off: everyone at `vb.tone`) |
+| `vb.tone` | 700 Hz | The first sender's pitch, 300-1200 Hz |
 | `vb.fade` | 5 ms | Sidetone fade in/out, 0-20 ms |
 | `vb.win` | 10 s | Channel button: how soon a second press switches channel, 3-30 s |
 
 Three ways to reach them:
 - **Menu:** in command mode, key `/` and pause. Dit (`E`) moves down, dah (`T`) up, `R` opens a group, toggles an on/off setting, runs a command, or starts and saves a change (dit/dah lower and raise the value meanwhile), and `B` or `< Back` go back a level. `X`, the command button, or `B` on the top level leave command mode. The VBand group first offers Settings or Commands (the commands below); running a command closes the menu and shows its answer.
-- **Keyed shortcuts:** `/VB LED OFF`, `/KY WPM 22`; leave off the value to see the current one, or key just the group (`/VB`) and pause to open its menu.
-- **The keyer's CLI:** `\$` lists everything, `\$ vb` a group, `\$ vb.fade` one setting, `\$ vb.fade 8` sets it.
+- **Keyed shortcuts:** `/VB LED OFF`, `/KY WPM 22`, `/VB NAME W7YFR`; leave off the value to see the current one, or key just the group (`/VB`) and pause to open its menu.
+- **The keyer's CLI:** `\$` lists everything, `\$ vb` a group, `\$ vb.fade` one setting, `\$ vb.fade 8` sets it (`\$ vb.name Rob W7YFR` keeps your capitals and drops the spaces).
+
+The keyer only offers the settings its build supports (Farnsworth with `FEATURE_FARNSWORTH`, autospace with `FEATURE_AUTOSPACE`, the transmitter with more than one, PTT times with a PTT line, and so on).
 
 **Protocol.** Frames are `$TYPE,fields*XX\n`, `XX` being the XOR of the bytes between `$` and `*` in hex; anything malformed is dropped. Either side's link is "up" while frames keep arriving (6 s timeout).
 
@@ -80,7 +85,7 @@ Three ways to reach them:
 | ESP -> keyer | `CR,1` / `CR,0` | Known / unknown |
 | keyer -> ESP | `CMD,<word>` | Run it (sent after leaving command mode) |
 | keyer -> ESP | `SL` | List the settings and commands |
-| ESP -> keyer | `SI,<i>,<key>,<label>,<type>[,<value>,<min>,<max>,<step>,<unit>]` / `SE,<count>` | One per item (type `b` on/off, `n` number, `a` command), then the end |
+| ESP -> keyer | `SI,<i>,<key>,<label>,<type>[,<value>,<min>,<max>,<step>,<unit>]` / `SE,<count>` | One per item (type `b` on/off, `n` number, `s` text, `a` command), then the end |
 | keyer -> ESP | `SG,<key>` / `SS,<key>,<value>` | Read / set a setting |
 | ESP -> keyer | `SV,<key>,<value>` | Its value (`?` if there's no such setting) |
 
