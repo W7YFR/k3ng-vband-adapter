@@ -19,6 +19,7 @@ constexpr int MAX_RAMP_SAMPLES = AUDIO_RAMP_MAX_MS * AUDIO_SAMPLE_RATE_HZ / 1000
 uint8_t envelopeTable[MAX_RAMP_SAMPLES + 1];
 volatile int rampSamples = 0;
 volatile int envelopeStep = 0; // 0 = silent, rampSamples = full level
+volatile int volumeScale = 256; // VB.VOL: 0-256 for 0-100%
 
 static_assert(PIN_AUDIO_OUT == 25, "writeDac() drives DAC1, which is GPIO25");
 
@@ -58,7 +59,8 @@ void IRAM_ATTR onAudioTimer() {
     writeDac(128); // faded out; idle at mid-scale until sidetoneLoop() stops the timer
     return;
   }
-  writeDac(128 + ((sineTable[phaseAccumulator >> 24] * (rampSamples ? envelopeTable[step] : 255)) >> 8));
+  int level = ((rampSamples ? envelopeTable[step] : 255) * volumeScale) >> 8;
+  writeDac(128 + ((sineTable[phaseAccumulator >> 24] * level) >> 8));
   phaseAccumulator += phaseIncrement;
 }
 
@@ -125,6 +127,7 @@ void sidetoneBegin() {
     sineTable[i] = (int8_t)(127.0f * sinf(angle));
   }
   sidetoneSetFadeMs(adapterSetting(AdapterSetting::Fade));
+  sidetoneSetVolume(adapterSetting(AdapterSetting::Volume));
   dacWrite(PIN_AUDIO_OUT, 128); // enables the DAC pad once; writeDac() just updates its level
 
   audioTimer = timerBegin(0, 80, true); // 80MHz APB / 80 = 1MHz tick (1us)
@@ -132,6 +135,10 @@ void sidetoneBegin() {
   timerAlarmWrite(audioTimer, 1000000 / AUDIO_SAMPLE_RATE_HZ, true);
   // Alarm stays disabled until a tone starts.
   lastEndMs = millis();
+}
+
+void sidetoneSetVolume(int percent) {
+  volumeScale = constrain(percent, 0, 100) * 256 / 100;
 }
 
 void sidetoneSetFadeMs(int ms) {

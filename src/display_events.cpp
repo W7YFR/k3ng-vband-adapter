@@ -2,6 +2,7 @@
 #include "display_events.h"
 #include "mega_link.h"
 #include "config.h"
+#include "adapter_settings.h"
 
 namespace {
 
@@ -130,7 +131,32 @@ void displayOtaWindowOpen(const IPAddress &ip, unsigned long minutes) {
 }
 
 void displayOtaAlwaysOn(const IPAddress &ip) {
-  show(SHOW_ROOM_MS, "OTA Always On|" + ip.toString());
+  show(SHOW_ROOM_MS, "OTA On|" + ip.toString());
+}
+
+void displayVbandOff() {
+  show(SHOW_ROOM_MS, "VBand Off|Press button twice|or /CON to connect");
+}
+
+void displayGoingToLobby() {
+  show(SHOW_BRIEF_MS, "VBand|To the lobby...");
+}
+
+void displayNoOneOn() {
+  show(SHOW_BRIEF_MS, "No One's On|All rooms empty");
+}
+
+// "?" for a count we don't have yet.
+static String countText(int count) {
+  return count < 0 ? String("?") : String(count);
+}
+
+void displayRoomCounts(const char *title, int lobby, int practice, const int *channels, int channelCount,
+                       const String &custom, int customCount, bool briefly) {
+  String rows = String(title) + "|Lobby " + countText(lobby) + " Prac " + countText(practice) + "|Ch";
+  for (int i = 0; i < channelCount; i++) rows += " " + countText(channels[i]);
+  rows += "|" + custom + " " + countText(customCount);
+  show(briefly ? SHOW_BRIEF_MS : SHOW_ROOM_MS, rows);
 }
 
 void displayOtaWindowClosed() {
@@ -154,7 +180,7 @@ void displayDiagnostics(const String &rows) {
 }
 
 void displayCommandHelp() {
-  show(SHOW_ROOM_MS, "/WHO /CH /CH1-5|/CHC /OTA /AP|/OFF /DIAG");
+  show(SHOW_ROOM_MS, "WHO CH BUSY ROOMS|LOBBY CON DIS OTA|AP OFF DIAG");
 }
 
 void displayUnknownCommand(const String &word) {
@@ -162,9 +188,9 @@ void displayUnknownCommand(const String &word) {
 }
 
 void displayUserJoined(const String &tag) {
-  megaLinkSend("SYS", tag + " joined", true);
+  if (adapterSetting(AdapterSetting::Join)) megaLinkSend("SYS", tag + " joined", true);
 }
 
 void displayUserLeft(const String &tag) {
-  megaLinkSend("SYS", tag + " left", true);
+  if (adapterSetting(AdapterSetting::Join)) megaLinkSend("SYS", tag + " left", true);
 }
