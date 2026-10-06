@@ -8,6 +8,7 @@
 #include "pins.h"
 #include "display_events.h"
 #include "mega_link.h"
+#include "adapter_settings.h"
 
 namespace {
 
@@ -50,6 +51,13 @@ void startListening() {
   Serial.println("OTA listening");
 }
 
+void stopListening() {
+  if (!listening) return;
+  ArduinoOTA.end();
+  listening = false;
+  Serial.println("OTA off");
+}
+
 }  // namespace
 
 void otaBegin() {
@@ -90,20 +98,27 @@ void otaBegin() {
     // Leave time to try again.
     if (windowOpen && windowEndMs - millis() < OTA_WINDOW_MS / 2) windowEndMs = millis() + OTA_WINDOW_MS / 2;
   });
-#ifdef OTA_ALWAYS_ON
-  startListening();
-#endif
+  if (adapterSetting(AdapterSetting::Ota) == OTA_MODE_ON) startListening(); // quietly, at boot
+}
+
+void otaSetMode(int mode) {
+  windowOpen = false;
+  if (mode == OTA_MODE_ON) {
+    startListening();
+    displayOtaAlwaysOn(WiFi.localIP());
+  } else if (mode == OTA_MODE_WINDOW) {
+    startListening();
+    windowOpen = true;
+    windowEndMs = millis() + OTA_WINDOW_MS;
+    displayOtaWindowOpen(WiFi.localIP(), OTA_WINDOW_MS / 60000);
+  } else {
+    stopListening(); // not mid-update: that runs entirely inside handle()
+    displayOtaWindowClosed();
+  }
 }
 
 void otaOpenWindow() {
-#ifdef OTA_ALWAYS_ON
-  displayOtaAlwaysOn(WiFi.localIP());
-#else
-  startListening();
-  windowOpen = true;
-  windowEndMs = millis() + OTA_WINDOW_MS;
-  displayOtaWindowOpen(WiFi.localIP(), OTA_WINDOW_MS / 60000);
-#endif
+  adapterSettingSet("OTA", String(OTA_MODE_WINDOW)); // which calls otaSetMode()
 }
 
 void otaLoop() {
@@ -111,9 +126,9 @@ void otaLoop() {
   // An update runs entirely inside handle(), so the window can't close on one.
   ArduinoOTA.handle();
   if (windowOpen && (long)(millis() - windowEndMs) >= 0) {
-    ArduinoOTA.end();
-    listening = false;
+    stopListening();
     windowOpen = false;
+    adapterSettingOtaWindowEnded();
     Serial.println("OTA window closed");
     displayOtaWindowClosed();
   }

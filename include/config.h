@@ -128,12 +128,20 @@
 #define JOIN_SCREEN_WAIT_MS 2000
 #define ROOM_USERS_POLL_MS 30000
 
-// Listen for OTA updates the whole time the board is running. Comment
-// out to listen only for OTA_WINDOW_MS after "/OTA" is keyed in the
-// keyer's command mode (or flash over USB). A window never cuts off an
-// update in progress, and a successful one reboots with it closed.
-#define OTA_ALWAYS_ON
+// Listening for OTA updates is a setting (VB.OTA): On (all the time),
+// Off, or 10min (for OTA_WINDOW_MS, as "/OTA" does, then Off). This is its
+// default, 1 = On. A window never cuts off an update in progress, and a
+// successful update reboots with it closed.
+#define OTA_MODE_DEFAULT 1
 #define OTA_WINDOW_MS 600000
+
+// More settings' defaults (adapter_settings.cpp): VB.START (0 off, 1 lobby,
+// 2 last channel, 3 custom room), VB.RX (0 text, 1 sender only, 2 none),
+// VB.JOIN (join/leave lines), VB.VOL (received audio, percent).
+#define VBAND_START_DEFAULT 2
+#define RX_SHOW_DEFAULT 0
+#define JOIN_NOTICES_DEFAULT true
+#define AUDIO_VOLUME_DEFAULT 100
 
 // Over-the-air updates (ArduinoOTA). Hostname is what shows up for
 // `pio run -t upload --upload-port <hostname>.local` / Arduino IDE's

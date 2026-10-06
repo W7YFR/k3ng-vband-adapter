@@ -36,6 +36,13 @@ void displayRoom(const String &channel, int count, const String &tags);
 void displayOtaWindowOpen(const IPAddress &ip, unsigned long minutes);
 void displayOtaAlwaysOn(const IPAddress &ip);
 void displayOtaWindowClosed();
+void displayVbandOff();
+void displayGoingToLobby();
+void displayNoOneOn();
+// How many are in each room ("?" where we don't know yet); briefly for
+// the splash on connecting.
+void displayRoomCounts(const char *title, int lobby, int practice, const int *channels, int channelCount,
+                       const String &custom, int customCount, bool briefly);
 void displayPortalRestart();
 void displayPowerOff();
 void displayPowerOffFailed();

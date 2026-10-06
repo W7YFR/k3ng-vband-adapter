@@ -108,7 +108,14 @@ void ledLoop() {
     mode = Mode::WifiDisconnected;
     wasJoined = false;
   } else if (mode != Mode::Announcing) {
-    if (!joinedNow) {
+    if (!joinedNow && !vbandIsJoining()) {
+      // In the lobby, or off VBand on purpose: nothing pending, so no blinking.
+      if (mode != Mode::Idle) {
+        mode = Mode::Idle;
+        setLed(false);
+      }
+      wasJoined = false;
+    } else if (!joinedNow) {
       if (mode != Mode::AwaitingJoin) {
         mode = Mode::AwaitingJoin;
         phaseStartMs = millis();

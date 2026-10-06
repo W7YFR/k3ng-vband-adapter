@@ -21,7 +21,8 @@ void onVbandRx(const String &userId, const String &userName, unsigned long space
 }
 
 // A press after a quiet spell shows where you are; pressing again within
-// the switch window (VB.WIN) of the last press moves to the next channel.
+// the switch window (VB.WIN) of the last press moves to the next channel
+// (or, off VBand or in the lobby, connects and rejoins the last one).
 void onChannelButton() {
   static bool pressedBefore = false;
   static unsigned long lastPressMs = 0;

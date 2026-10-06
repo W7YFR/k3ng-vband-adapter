@@ -5,6 +5,7 @@
 #include "vband_client.h"
 #include "user_tag.h"
 #include "config.h"
+#include "adapter_settings.h"
 
 namespace {
 
@@ -28,7 +29,9 @@ bool noDecodeChannel() {
 void sendDecoded(Sender &sender) {
   String text = sender.decoder.take();
   if (!text.length()) return;
-  if (noDecodeChannel()) {
+  int show = adapterSetting(AdapterSetting::Rx);
+  if (show == RX_SHOW_NONE) return; // audio only
+  if (show == RX_SHOW_SENDER || noDecodeChannel()) {
     // Just who's sending; the keyer starts their line but shows no text.
     text.trim();
     if (!text.length()) return;
