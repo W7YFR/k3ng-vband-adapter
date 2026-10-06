@@ -12,6 +12,7 @@
 #include "diagnostics.h"
 #include "keyer_commands.h"
 #include "config.h"
+#include "adapter_settings.h"
 
 namespace {
 
@@ -20,11 +21,11 @@ void onVbandRx(const String &userId, const String &userName, unsigned long space
 }
 
 // A press after a quiet spell shows where you are; pressing again within
-// CHANNEL_SWITCH_WINDOW_MS of the last press moves to the next channel.
+// the switch window (VB.WIN) of the last press moves to the next channel.
 void onChannelButton() {
   static bool pressedBefore = false;
   static unsigned long lastPressMs = 0;
-  bool switching = pressedBefore && millis() - lastPressMs < CHANNEL_SWITCH_WINDOW_MS;
+  bool switching = pressedBefore && millis() - lastPressMs < adapterSetting(AdapterSetting::Window) * 1000UL;
   pressedBefore = true;
   lastPressMs = millis();
   if (switching) {
@@ -59,6 +60,7 @@ void vbandAppLoop() {
   diagnosticsStageStart();
   megaLinkSetVbandReady(vbandIsReady());
   megaLinkLoop();
+  keyerCommandsLoop();
   diagnosticsStageEnd(DIAG_MEGA);
   diagnosticsStageStart();
   keyerLoop(vbandSendSpaceMark);

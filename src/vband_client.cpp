@@ -198,6 +198,15 @@ bool vbandJoinChannelCode(char code) {
   return true;
 }
 
+void vbandReconnect() {
+  Serial.println("Reconnecting to VBand with the new name");
+  ws.disconnect(); // the library reconnects by itself
+}
+
+void vbandCustomRoomChanged() {
+  if (channelIndex == CHANNEL_CYCLE_COUNT - 1) joinChannelIndex(channelIndex);
+}
+
 void vbandShowRoom() {
   if (!joined) {
     displayVbandUnreachable(wifiConnected());

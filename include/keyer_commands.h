@@ -12,4 +12,8 @@
 //   /OFF        power off
 //   /DIAG       signal, disconnects, worst gap since boot
 //   /H          the list above
+//
+// It also serves the adapter's settings (adapter_settings.h) to the
+// keyer's menu and CLI.
 void keyerCommandsBegin();
+void keyerCommandsLoop();

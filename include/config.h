@@ -67,10 +67,11 @@
 // channel button gets its own, looser debounce window.
 #define BUTTON_DEBOUNCE_MS 30
 
-// A channel button press after none for CHANNEL_SWITCH_WINDOW_MS shows the
+// A channel button press after none for the switch window shows the
 // current channel and who's in it; only a press within that time of the
-// last one moves to the next channel.
-#define CHANNEL_SWITCH_WINDOW_MS 10000
+// last one moves to the next channel. A setting (VB.WIN, seconds); this is
+// its default.
+#define CHANNEL_SWITCH_WINDOW_S 10
 
 // Holding the button this long powers the board off (power_latch.cpp);
 // the LED then flashes at POWER_OFF_FLASH_MS on/off until the button is
@@ -81,30 +82,36 @@
 // Status LED (led_indicator.cpp). Blink intervals are the on/off
 // duration in each state; MORSE_WPM sets the speed of the one-shot
 // channel-identifier flash played on every join confirmation.
-// While joined, the LED lights with your keying. Comment out to keep it off.
-#define LED_FOLLOWS_KEY
+// While joined, the LED lights with your keying: a setting (VB.LED); this
+// is its default.
+#define LED_FOLLOWS_KEY_DEFAULT true
 #define LED_WIFI_DISCONNECTED_BLINK_MS 500
 #define LED_WIFI_CONNECTED_BLINK_MS 250
 #define MORSE_WPM 10
 
 // Sidetone audio (sidetone.cpp): pitch of the synthesized tone for
 // incoming code -- one per received-text sender slot, so several people
-// in a room can be told apart by ear; the first sender heard gets
-// AUDIO_TONE_HZ. Comment out AUDIO_TONE_PER_SENDER for one pitch for
-// everyone. Then the DAC sample rate it's synthesized at (a clean
+// in a room can be told apart by ear; the first sender heard gets the
+// VB.TONE setting's pitch (AUDIO_TONE_HZ is its default). Pitch per sender
+// is a setting too (VB.PITCH, off = everyone at VB.TONE);
+// AUDIO_TONE_PER_SENDER_DEFAULT is its default. Then the
+// DAC sample rate it's synthesized at (a clean
 // divisor of 1,000,000 so the sample timer's period is a whole number
 // of microseconds). AUDIO_QUEUE_CAPACITY caps how many received
 // space/mark pairs can be buffered awaiting playback -- if playback
 // ever falls behind arrival, the oldest queued pair is dropped rather
 // than growing unbounded.
 #define AUDIO_TONE_HZ 700
-#define AUDIO_TONE_PER_SENDER
-// One per RX_TEXT_MAX_SENDERS slot; neighbours kept well apart.
+#define AUDIO_TONE_PER_SENDER_DEFAULT true
+// One per RX_TEXT_MAX_SENDERS slot; neighbours kept well apart. The first
+// is replaced by VB.TONE.
 #define AUDIO_SENDER_TONES_HZ {AUDIO_TONE_HZ, 550, 850, 600, 800, 500, 900, 650}
 #define AUDIO_SAMPLE_RATE_HZ 20000
-// Each tone fades in and out over this long (a raised-cosine envelope)
-// instead of switching on and off at full level, which clicks.
+// Each tone fades in and out (a raised-cosine envelope) instead of
+// switching on and off at full level, which clicks. The fade is a setting
+// (VB.FADE, 0 to AUDIO_RAMP_MAX_MS); AUDIO_RAMP_MS is its default.
 #define AUDIO_RAMP_MS 5
+#define AUDIO_RAMP_MAX_MS 20
 #define AUDIO_QUEUE_CAPACITY 128 // ~15-25 characters; 12 bytes each
 
 // Received text (received_text.cpp): how many recent senders get their

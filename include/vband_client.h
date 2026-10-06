@@ -23,6 +23,13 @@ bool vbandChannelCodeValid(char code);
 // isn't connected.
 void vbandShowRoom();
 
+// The VBand name changed: reconnect, since the server takes our name when
+// we connect.
+void vbandReconnect();
+
+// The custom room's name changed: rejoin it if that's where we are.
+void vbandCustomRoomChanged();
+
 // True once the server has confirmed the join (CJN) for the current
 // CHANNEL_CYCLE position; false from the moment a join is requested
 // (including on vbandCycleChannel()) until that confirmation arrives.

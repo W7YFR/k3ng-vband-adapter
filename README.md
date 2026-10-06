@@ -39,7 +39,7 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 - **Joins and leaves:** "X joined" / "X left" lines. The server doesn't push room changes, so the user list is polled every 30 s.
 - Status screens you asked for aren't wiped by incoming text; the conversation shows again when they time out.
 
-**Keyer commands.** In the keyer's command mode, key `/` then a word and pause for a word space. The keyer checks the word with the ESP32 first: an unknown one shows "Unknown /XYZ" and stays in command mode to try again; a known one leaves command mode and runs.
+**Keyer commands.** In the keyer's command mode, key `/` then a word and pause for a word space. The keyer checks the word with the ESP32 first: an unknown one shows "Unknown /XYZ" so you can try again; a known one runs, and its answer shows in command mode until it times out. Either way you stay in command mode: it only exits with the command button, `X`, or `B` on the menu's top level.
 
 | Command | Does |
 |---|---|
@@ -51,6 +51,25 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 | `/OFF` | Power off (on USB it can't, and says so) |
 | `/DIAG` | Signal, uptime, disconnects, worst gap in received sending, dropped elements |
 | `/H` | The list |
+
+**Settings.** With `FEATURE_SETTINGS_MENU` on the keyer, the adapter's settings sit alongside the keyer's own, in groups: `ky` (keyer), `st` (sidetone) and `vb` (this adapter). They're saved on whichever board owns them (the adapter's in NVS), so they survive reboots and reflashing; the defaults are in `config.h`.
+
+| Setting | Default | |
+|---|---|---|
+| `vb.name` | set in the portal | Your VBand name (spaces removed); changing it reconnects |
+| `vb.room` | set in the portal | Your custom room (spaces removed); rejoined if you're in it |
+| `vb.led` | on | The LED follows your keying while joined |
+| `vb.pitch` | on | A pitch per sender (off: everyone at `vb.tone`) |
+| `vb.tone` | 700 Hz | The first sender's pitch, 300-1200 Hz |
+| `vb.fade` | 5 ms | Sidetone fade in/out, 0-20 ms |
+| `vb.win` | 10 s | Channel button: how soon a second press switches channel, 3-30 s |
+
+Three ways to reach them:
+- **Menu:** in command mode, key `/` and pause. Dit (`E`) moves down, dah (`T`) up, `R` opens a group, toggles an on/off setting, runs a command, or starts and saves a change (dit/dah lower and raise the value meanwhile), and `B` or `< Back` go back a level. `X`, the command button, or `B` on the top level leave command mode. The VBand group first offers Settings or Commands (the commands below); running a command closes the menu and shows its answer.
+- **Keyed shortcuts:** `/VB LED OFF`, `/KY WPM 22`, `/VB NAME W7YFR`; leave off the value to see the current one, or key just the group (`/VB`) and pause to open its menu.
+- **The keyer's CLI:** `\$` lists everything, `\$ vb` a group, `\$ vb.fade` one setting, `\$ vb.fade 8` sets it (`\$ vb.name Rob W7YFR` keeps your capitals and drops the spaces).
+
+The keyer only offers the settings its build supports (Farnsworth with `FEATURE_FARNSWORTH`, autospace with `FEATURE_AUTOSPACE`, the transmitter with more than one, PTT times with a PTT line, and so on).
 
 **Protocol.** Frames are `$TYPE,fields*XX\n`, `XX` being the XOR of the bytes between `$` and `*` in hex; anything malformed is dropped. Either side's link is "up" while frames keep arriving (6 s timeout).
 
@@ -65,6 +84,10 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 | keyer -> ESP | `CK,<word>` | Is this a command? |
 | ESP -> keyer | `CR,1` / `CR,0` | Known / unknown |
 | keyer -> ESP | `CMD,<word>` | Run it (sent after leaving command mode) |
+| keyer -> ESP | `SL` | List the settings and commands |
+| ESP -> keyer | `SI,<i>,<key>,<label>,<type>[,<value>,<min>,<max>,<step>,<unit>]` / `SE,<count>` | One per item (type `b` on/off, `n` number, `s` text, `a` command), then the end |
+| keyer -> ESP | `SG,<key>` / `SS,<key>,<value>` | Read / set a setting |
+| ESP -> keyer | `SV,<key>,<value>` | Its value (`?` if there's no such setting) |
 
 ## Versions
 
@@ -75,7 +98,7 @@ The adapter shows the commit it was built from (`+` if there were uncommitted ch
 ## Channel button
 
 - **Press:** shows the current channel and who's in it on the keyer.
-- **Press again within 10 s** (`CHANNEL_SWITCH_WINDOW_MS`) of the last press: next channel (Channel 1-4, Channel 5 (ND), your custom room, around again). Presses act on release.
+- **Press again within 10 s** (the `vb.win` setting) of the last press: next channel (Channel 1-4, Channel 5 (ND), your custom room, around again). Presses act on release.
 - **Hold 2 s:** power off (the LED flashes until you let go). On USB power it can't cut its own power, so after a moment it carries on and the keyer shows "Still Powered".
 - **Hold through power-on:** opens the WiFi / VBand settings portal (or key `/AP`).
 
@@ -85,7 +108,7 @@ The last channel joined is remembered and rejoined after a reboot.
 
 - Blinking slowly: WiFi not connected. Blinking faster: WiFi up, not joined.
 - After each join, flashes the channel number (or `C`) in Morse.
-- While joined, lights with your keying (`LED_FOLLOWS_KEY`).
+- While joined, lights with your keying (the `vb.led` setting).
 
 ## Soft power latch
 
@@ -131,8 +154,8 @@ Check your actual parts' datasheets for lead order (E/B/C, G/D/S) -- this gives 
 
 `PIN_AUDIO_OUT` (GPIO25) drives one of the ESP32's built-in 8-bit DACs, synthesizing a sine-wave tone for code received from other users (see `sidetone.cpp`).
 
-- **A pitch per sender** (`AUDIO_TONE_PER_SENDER`, `AUDIO_SENDER_TONES_HZ`) so several people in a room can be told apart: the first sender heard gets 700 Hz, the next 550, 850, 600, 800 Hz and so on.
-- **Fade in and out** over 5 ms (`AUDIO_RAMP_MS`, a raised-cosine envelope) instead of switching at full level, which clicks.
+- **A pitch per sender** (the `vb.pitch` setting; pitches in `AUDIO_SENDER_TONES_HZ`) so several people in a room can be told apart: the first sender heard gets 700 Hz, the next 550, 850, 600, 800 Hz and so on.
+- **Fade in and out** over 5 ms (the `vb.fade` setting, a raised-cosine envelope) instead of switching at full level, which clicks.
 - **Timing:** elements are replayed at the sender's own timing, never faster. If the network delivers a burst after a stall, playback runs behind until the sender's next pause, then catches up (silence that has already gone by isn't replayed). Up to 128 elements are held (`AUDIO_QUEUE_CAPACITY`).
 - The sample interrupt runs at 20 kHz, only while a tone is playing or fading out. It's meant to be summed into the **same amplifier/speaker circuit your keyer's own sidetone already feeds** -- not wired into a port on the keyer itself.
 
