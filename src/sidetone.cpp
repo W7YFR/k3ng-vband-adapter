@@ -5,18 +5,20 @@
 #include "pins.h"
 #include "config.h"
 #include "diagnostics.h"
+#include "adapter_settings.h"
 
 namespace {
 
 constexpr int SINE_TABLE_SIZE = 256; // one full cycle; index = top 8 bits of phase
 int8_t sineTable[SINE_TABLE_SIZE];
 
-// Tones fade in and out over RAMP_SAMPLES samples (AUDIO_RAMP_MS): the
-// sine is scaled by envelopeTable[envelopeStep], a raised-cosine rise from
-// 0 to 255. Switching a tone on or off at full level clicks.
-constexpr int RAMP_SAMPLES = AUDIO_RAMP_MS * AUDIO_SAMPLE_RATE_HZ / 1000;
-uint8_t envelopeTable[RAMP_SAMPLES + 1];
-volatile int envelopeStep = 0; // 0 = silent, RAMP_SAMPLES = full level
+// Tones fade in and out over rampSamples samples (the VB.FADE setting):
+// the sine is scaled by envelopeTable[envelopeStep], a raised-cosine rise
+// from 0 to 255. Switching a tone on or off at full level clicks.
+constexpr int MAX_RAMP_SAMPLES = AUDIO_RAMP_MAX_MS * AUDIO_SAMPLE_RATE_HZ / 1000;
+uint8_t envelopeTable[MAX_RAMP_SAMPLES + 1];
+volatile int rampSamples = 0;
+volatile int envelopeStep = 0; // 0 = silent, rampSamples = full level
 
 static_assert(PIN_AUDIO_OUT == 25, "writeDac() drives DAC1, which is GPIO25");
 
@@ -25,16 +27,12 @@ volatile bool toneOn = false;
 volatile uint32_t phaseAccumulator = 0;
 volatile uint32_t phaseIncrement = 0;
 
-#ifdef AUDIO_TONE_PER_SENDER
 constexpr uint16_t SENDER_TONES_HZ[] = AUDIO_SENDER_TONES_HZ;
 static_assert(sizeof(SENDER_TONES_HZ) / sizeof(SENDER_TONES_HZ[0]) == RX_TEXT_MAX_SENDERS,
               "AUDIO_SENDER_TONES_HZ needs one pitch per RX_TEXT_MAX_SENDERS slot");
-#endif
 
 uint32_t toneHz(uint8_t sender) {
-#ifdef AUDIO_TONE_PER_SENDER
-  if (sender < RX_TEXT_MAX_SENDERS) return SENDER_TONES_HZ[sender];
-#endif
+  if (adapterSetting(AdapterSetting::Pitch) && sender < RX_TEXT_MAX_SENDERS) return SENDER_TONES_HZ[sender];
   return AUDIO_TONE_HZ;
 }
 
@@ -51,14 +49,14 @@ void IRAM_ATTR writeDac(uint8_t value) {
 void IRAM_ATTR onAudioTimer() {
   int step = envelopeStep;
   if (toneOn) {
-    if (step < RAMP_SAMPLES) envelopeStep = ++step;
+    if (step < rampSamples) envelopeStep = ++step;
   } else if (step > 0) {
     envelopeStep = --step;
   } else {
     writeDac(128); // faded out; idle at mid-scale until sidetoneLoop() stops the timer
     return;
   }
-  writeDac(128 + ((sineTable[phaseAccumulator >> 24] * envelopeTable[step]) >> 8));
+  writeDac(128 + ((sineTable[phaseAccumulator >> 24] * (rampSamples ? envelopeTable[step] : 255)) >> 8));
   phaseAccumulator += phaseIncrement;
 }
 
@@ -124,10 +122,7 @@ void sidetoneBegin() {
     float angle = 2.0f * PI * i / SINE_TABLE_SIZE;
     sineTable[i] = (int8_t)(127.0f * sinf(angle));
   }
-  for (int i = 0; i <= RAMP_SAMPLES; i++) {
-    float rise = RAMP_SAMPLES ? (1.0f - cosf(PI * i / RAMP_SAMPLES)) / 2 : 1.0f;
-    envelopeTable[i] = (uint8_t)(255.0f * rise + 0.5f);
-  }
+  sidetoneSetFadeMs(adapterSetting(AdapterSetting::Fade));
   dacWrite(PIN_AUDIO_OUT, 128); // enables the DAC pad once; writeDac() just updates its level
 
   audioTimer = timerBegin(0, 80, true); // 80MHz APB / 80 = 1MHz tick (1us)
@@ -135,6 +130,18 @@ void sidetoneBegin() {
   timerAlarmWrite(audioTimer, 1000000 / AUDIO_SAMPLE_RATE_HZ, true);
   // Alarm stays disabled until a tone starts.
   lastEndMs = millis();
+}
+
+void sidetoneSetFadeMs(int ms) {
+  int samples = constrain(ms, 0, AUDIO_RAMP_MAX_MS) * AUDIO_SAMPLE_RATE_HZ / 1000;
+  // Rebuilt in place while a tone may be playing; the interrupt just reads
+  // a mix of old and new levels for a moment.
+  for (int i = 0; i <= samples; i++) {
+    float rise = samples ? (1.0f - cosf(PI * i / samples)) / 2 : 1.0f;
+    envelopeTable[i] = (uint8_t)(255.0f * rise + 0.5f);
+  }
+  rampSamples = samples;
+  if (envelopeStep > samples) envelopeStep = samples;
 }
 
 void sidetoneSetPlayedCallback(SidetonePlayedCallback callback) {

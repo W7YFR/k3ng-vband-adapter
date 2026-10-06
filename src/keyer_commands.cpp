@@ -7,8 +7,41 @@
 #include "power_latch.h"
 #include "diagnostics.h"
 #include "display_events.h"
+#include "adapter_settings.h"
 
 namespace {
+
+// The commands as menu actions, after the settings in the list the keyer
+// asks for ("SL").
+struct Action {
+  const char *word;
+  const char *label;
+};
+const Action ACTIONS[] = {
+    {"WHO", "Who's here"}, {"CH", "Next channel"}, {"OTA", "OTA update"},
+    {"AP", "WiFi setup"},  {"OFF", "Power off"},   {"DIAG", "Diagnostics"},
+};
+constexpr int ACTION_COUNT = sizeof(ACTIONS) / sizeof(ACTIONS[0]);
+
+// The list goes out a frame at a time, spaced so the keyer's 64-byte
+// receive buffer keeps up.
+constexpr unsigned long LIST_FRAME_SPACING_MS = 20;
+int listNext = -1; // next item to send, -1 when not listing
+unsigned long lastListFrameMs = 0;
+
+void sendListItem(int i) {
+  int settings = adapterSettingsCount();
+  if (i < settings) {
+    megaLinkSend("SI", String(i) + "," + adapterSettingDescription(i));
+  } else {
+    const Action &a = ACTIONS[i - settings];
+    megaLinkSend("SI", String(i) + "," + a.word + "," + a.label + ",a");
+  }
+}
+
+void sendValue(const String &key, int i) {
+  megaLinkSend("SV", key + "," + (i < 0 ? String("?") : String(adapterSettingValueAt(i))));
+}
 
 String normalize(String word) {
   word.trim();
@@ -54,11 +87,24 @@ void runCommand(const String &word) {
 // "CK,<word>": is this a command? answered "CR,1" / "CR,0". Then, once the
 // keyer has left command mode (where it wouldn't show our answer),
 // "CMD,<word>" runs it.
+// Settings: "SL" lists them and the commands ("SI,<i>,..." each, then
+// "SE,<count>"); "SG,<key>" reads one and "SS,<key>,<value>" sets it, both
+// answered "SV,<key>,<value>" ("?" for no such setting).
 void onKeyerFrame(const String &type, const String &fields) {
   if (type == "CK") {
     megaLinkSend("CR", isKnown(normalize(fields)) ? "1" : "0");
   } else if (type == "CMD") {
     runCommand(normalize(fields));
+  } else if (type == "SL") {
+    listNext = 0;
+  } else if (type == "SG") {
+    String key = normalize(fields);
+    sendValue(key, adapterSettingFind(key));
+  } else if (type == "SS") {
+    int comma = fields.indexOf(',');
+    String key = normalize(comma < 0 ? fields : fields.substring(0, comma));
+    int i = comma < 0 ? -1 : adapterSettingSet(key, fields.substring(comma + 1).toInt());
+    sendValue(key, i);
   }
 }
 
@@ -66,4 +112,16 @@ void onKeyerFrame(const String &type, const String &fields) {
 
 void keyerCommandsBegin() {
   megaLinkSetFrameCallback(onKeyerFrame);
+}
+
+void keyerCommandsLoop() {
+  if (listNext < 0 || millis() - lastListFrameMs < LIST_FRAME_SPACING_MS) return;
+  lastListFrameMs = millis();
+  int count = adapterSettingsCount() + ACTION_COUNT;
+  if (listNext < count) {
+    sendListItem(listNext++);
+  } else {
+    megaLinkSend("SE", String(count));
+    listNext = -1;
+  }
 }

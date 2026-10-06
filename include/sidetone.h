@@ -13,6 +13,9 @@
 // non-blocking state machine polled from sidetoneLoop().
 void sidetoneBegin();
 void sidetoneLoop();
+
+// How long each tone fades in and out (0 to AUDIO_RAMP_MAX_MS).
+void sidetoneSetFadeMs(int ms);
 // sender (a received-text slot) picks the pitch and is passed back to
 // the played callback.
 void sidetoneQueueSpaceMark(unsigned long space, unsigned long mark, uint8_t sender);

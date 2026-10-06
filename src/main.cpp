@@ -2,6 +2,7 @@
 #include "config.h"
 #include "power_latch.h"
 #include "vband_settings.h"
+#include "adapter_settings.h"
 #include "vband_app.h"
 #include "circuit_test.h"
 
@@ -14,6 +15,7 @@ void setup() {
   Serial.begin(115200);
   powerOffButtonBegin();
   vbandSettingsBegin();
+  adapterSettingsBegin();
 #ifdef CIRCUIT_TEST
   circuitTestBegin();
 #else
