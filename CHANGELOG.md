@@ -19,6 +19,10 @@ Builds show their git commit at boot and in `/DIAG`. The keyer link protocol is 
   the whole list, and it's logged at every boot with the reset reason. Failed reconnect attempts, `/DIS` and going
   to the lobby aren't recorded as drops.
 
+### Fixed
+- "Room X: N others" is logged when the count or who's there changes: once per join instead of twice, and no longer
+  every 30 s. Playback after a drop is unchanged on purpose (what was received keeps playing); the README says so.
+
 ## 2026-10-05: settings
 
 ### Added
