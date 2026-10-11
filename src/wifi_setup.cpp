@@ -9,6 +9,7 @@
 #include "mega_link.h"
 #include "pins.h"
 #include "config.h"
+#include "log.h"
 
 static_assert(sizeof(WIFI_MANAGER_AP_PASSWORD) - 1 >= 8,
               "WIFI_MANAGER_AP_PASSWORD must be at least 8 characters (WPA2)");
@@ -76,7 +77,7 @@ bool portalRequestedByCommand() {
 }  // namespace
 
 void wifiRestartIntoPortal() {
-  Serial.println("Restarting into the config portal");
+  Log.println("Restarting into the config portal");
   displayPortalRestart();
   megaLinkSendBye("AP");
   delay(100); // let the BYE and the screen out of the UART
@@ -106,7 +107,7 @@ void wifiConnect() {
 
   bool connected = false;
   if (portalRequestedByCommand() || portalRequestedAtBoot()) {
-    Serial.println("Opening config portal");
+    Log.println("Opening config portal");
     connected = wm.startConfigPortal(WIFI_MANAGER_AP_NAME, WIFI_MANAGER_AP_PASSWORD);
     // Exited without saving: carry on with whatever WiFi is already saved.
   }
@@ -119,14 +120,14 @@ void wifiConnect() {
   stopBlink();
 
   if (!connected) {
-    Serial.println("WiFi provisioning failed, restarting");
+    Log.println("WiFi provisioning failed, restarting");
     ESP.restart();
   }
   // Modem sleep (the ESP32 default) dozes between access point beacons;
   // received packets get delayed or lost, and the lost ones stall the
   // VBand connection for seconds while TCP backs off and retransmits.
   WiFi.setSleep(false);
-  Serial.println("WiFi connected: " + WiFi.localIP().toString());
+  Log.println("WiFi connected: " + WiFi.localIP().toString());
   displayWifiConnected(WiFi.localIP());
   ledFlashSuccess();
 }

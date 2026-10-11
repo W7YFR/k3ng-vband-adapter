@@ -6,6 +6,7 @@
 #include "display_events.h"
 #include "pins.h"
 #include "config.h"
+#include "log.h"
 
 namespace {
 
@@ -47,7 +48,7 @@ void powerDown() {
   digitalWrite(PIN_POWER_LATCH, HIGH);
   digitalWrite(PIN_LED, LOW);
   offPending = false;
-  Serial.println("Power off: still powered (USB?), staying on");
+  Log.println("Power off: still powered (USB?), staying on");
   displayPowerOffFailed();
 }
 
@@ -67,7 +68,7 @@ void powerOffButtonTask(void*) {
     }
     if (armed && button.activeNow() &&
         millis() - pressedAtMs >= POWER_OFF_HOLD_MS) {
-      Serial.println("Power off: release button");
+      Log.println("Power off: release button");
       powerDown();
     }
     vTaskDelay(pdMS_TO_TICKS(5));
@@ -96,7 +97,7 @@ void powerLatchHoldThroughRestart() {
 }
 
 void powerOffNow() {
-  Serial.println("Power off (command)");
+  Log.println("Power off (command)");
   powerDown();
 }
 

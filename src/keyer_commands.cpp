@@ -10,6 +10,7 @@
 #include "adapter_settings.h"
 #include "vband_settings.h"
 #include "user_tag.h"
+#include "log.h"
 
 namespace {
 
@@ -96,7 +97,7 @@ bool isKnown(const String &word) {
 }
 
 void runCommand(const String &word) {
-  Serial.println("Keyer command: /" + word);
+  Log.println("Keyer command: /" + word);
 
   if (word == "WHO") {
     vbandShowRoom();

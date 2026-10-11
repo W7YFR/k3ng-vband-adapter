@@ -8,6 +8,7 @@
 #include "room_users.h"
 #include "wifi_setup.h"
 #include "diagnostics.h"
+#include "log.h"
 
 namespace {
 
@@ -83,7 +84,7 @@ void finishJoin() {
 
 void sendJoin() {
   joined = false; // gate SM sends until CJN confirms the new channel
-  Serial.println("Switching to channel " + currentChannel());
+  Log.println("Switching to channel " + currentChannel());
   ws.sendTXT("JC," + currentChannel());
 }
 
@@ -173,7 +174,7 @@ void handleMessage(const String &msg) {
   if (cmd == "COK" && n >= 2) {
     myId = fields[1];
     connected = true;
-    Serial.println("Connected with id " + myId);
+    Log.println("Connected with id " + myId);
     askCounts(CountsFor::Splash); // the join (if any) follows the splash
   } else if (cmd == "CJN" && n >= 2) {
     joined = true;
@@ -184,7 +185,7 @@ void handleMessage(const String &msg) {
     joinedAtMs = millis();
     roomUsersReset(joinedChannel, myId);
     requestUserList();
-    Serial.println("Joined channel " + fields[1]);
+    Log.println("Joined channel " + fields[1]);
   } else if (cmd == "ULB" && n >= 2) {
     if (fields[1] == vbandSettingsRoom()) customListing = 0;
     roomUsersListBegin(fields[1]);
@@ -206,30 +207,31 @@ void handleMessage(const String &msg) {
     setCount(fields[1], fields[2].toInt());
     if (joined && fields[1] == joinedChannel) requestUserList();
   } else if (cmd == "CNF" && n >= 2) {
-    Serial.println("Server connection failure: " + fields[1]);
+    Log.println("Server connection failure: " + fields[1]);
   } else if (cmd == "SMK" && n >= 6) {
     // SMK,<channel>,<user_id>,<user_name>,<space>,<mark> -- raw timing only,
     // the server never decodes to text (see received_text.cpp for that).
     if (fields[2] != myId) {
       diagnosticsNoteSmk();
+      // Every element: on the USB port only, not forwarded (it would crowd out the log history).
       Serial.println("RX " + fields[3] + " space=" + fields[4] + " mark=" + fields[5]);
       if (rxCallback) {
         rxCallback(fields[2], fields[3], fields[4].toInt(), fields[5].toInt());
       }
     }
   } else if (cmd != "CLB" && cmd != "PON") {
-    Serial.println("Unhandled: " + msg); // learning what else the server sends
+    Log.println("Unhandled: " + msg); // learning what else the server sends
   }
 }
 
 void onWsEvent(WStype_t type, uint8_t *payload, size_t length) {
   switch (type) {
     case WStype_CONNECTED:
-      Serial.println("WS connected");
+      Log.println("WS connected");
       ws.sendTXT("CN," + vbandSettingsName() + ",0,VB 2.0");
       break;
     case WStype_DISCONNECTED:
-      Serial.println("WS disconnected");
+      Log.println("WS disconnected");
       diagnosticsNoteWsDisconnect();
       // Fires again on every failed reconnect attempt, roughly every 5s.
       if (quietDisconnect) {
@@ -329,6 +331,7 @@ void vbandLoop() {
 
 void vbandSendSpaceMark(unsigned long space, unsigned long mark) {
   if (!joined) return;
+  // Every element: on the USB port only, not forwarded (it would crowd out the log history).
   Serial.println("TX space=" + String(space) + " mark=" + String(mark));
   ws.sendTXT("SM," + String(space) + "," + String(mark));
 }
@@ -362,7 +365,7 @@ void vbandConnect() {
 
 void vbandDisconnect() {
   if (!connectionWanted) return;
-  Serial.println("Disconnecting from VBand");
+  Log.println("Disconnecting from VBand");
   connectionWanted = false;
   ws.disconnect();
   connected = false;
@@ -384,7 +387,7 @@ void vbandGoToLobby() {
     return;
   }
   // The server has no "leave channel"; a fresh connection starts in the lobby.
-  Serial.println("Going to the lobby");
+  Log.println("Going to the lobby");
   wantRoom = false;
   joinAtMs = 0;
   quietDisconnect = true;

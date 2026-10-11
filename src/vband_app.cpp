@@ -13,6 +13,7 @@
 #include "keyer_commands.h"
 #include "config.h"
 #include "adapter_settings.h"
+#include "log.h"
 
 namespace {
 
@@ -62,6 +63,7 @@ void vbandAppLoop() {
   megaLinkSetVbandReady(vbandIsReady());
   megaLinkLoop();
   keyerCommandsLoop();
+  logForwardLoop();
   diagnosticsStageEnd(DIAG_MEGA);
   diagnosticsStageStart();
   keyerLoop(vbandSendSpaceMark);

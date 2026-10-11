@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include "diagnostics.h"
 #include "config.h"
+#include "log.h"
 
 namespace {
 
@@ -28,7 +29,7 @@ unsigned long wifiDisconnects = 0;
 
 void onWifiDisconnected(WiFiEvent_t, WiFiEventInfo_t info) {
   wifiDisconnects++;
-  Serial.printf("DIAG wifi disconnected reason=%d at %lus\n",
+  Log.printf("DIAG wifi disconnected reason=%d at %lus\n",
                 info.wifi_sta_disconnected.reason, millis() / 1000);
 }
 
@@ -86,7 +87,7 @@ void diagnosticsNoteToneMs(unsigned long ms) {
 void diagnosticsNoteWsDisconnect() {
   wsDisconnects++;
 #ifdef DIAGNOSTICS_LOG
-  Serial.printf("DIAG ws disconnected at %lus, %lums since last server message, rssi=%d\n",
+  Log.printf("DIAG ws disconnected at %lus, %lums since last server message, rssi=%d\n",
                 millis() / 1000, lastServerMessageMs ? millis() - lastServerMessageMs : 0,
                 WiFi.RSSI());
 #endif
@@ -114,7 +115,7 @@ void diagnosticsLoop() {
   for (int i = 0; i < DIAG_STAGES; i++) {
     stages += String(" ") + STAGE_NAMES[i] + "=" + String(stageMaxUs[i] / 1000);
   }
-  Serial.printf("DIAG t=%lus rssi=%d heap=%u minheap=%u loopmax=%lums [max ms:%s] "
+  Log.printf("DIAG t=%lus rssi=%d heap=%u minheap=%u loopmax=%lums [max ms:%s] "
                 "smk=%lu smkgap=%lums srvgap=%lums queue=%d qmax=%d drops=%lu tone=%lums "
                 "wsdrops=%lu wifidrops=%lu\n",
                 millis() / 1000, WiFi.RSSI(), ESP.getFreeHeap(), ESP.getMinFreeHeap(),

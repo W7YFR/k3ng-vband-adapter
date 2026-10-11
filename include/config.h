@@ -196,6 +196,19 @@
 // VBAND_LINK_PROTOCOL_VERSION on the keyer.
 #define MEGA_LINK_PROTOCOL_VERSION 1
 
+// Log forwarding (log.cpp): with VB.LOG on, everything printed to the USB
+// serial port is also sent to the keyer, which prints it on its own USB
+// port (in the case, the only one you can reach). The last
+// LOG_HISTORY_LINES lines are kept, so turning it on sends what happened
+// before too. Lines are cut to LOG_LINE_MAX characters. A log frame goes
+// out at most every LOG_FORWARD_SPACING_MS and only while nothing else is
+// waiting to go to the keyer, so the log never delays the link's own
+// traffic; lines that can't keep up are dropped, with a note saying how
+// many.
+#define LOG_HISTORY_LINES 32
+#define LOG_LINE_MAX 240
+#define LOG_FORWARD_SPACING_MS 40
+
 // Columns on the keyer's display (its LCD_COLUMNS). Status screens are
 // cut to this width before sending, to keep frames short.
 #define KEYER_DISPLAY_COLUMNS 18

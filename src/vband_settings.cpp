@@ -2,6 +2,7 @@
 #include <Preferences.h>
 #include "vband_settings.h"
 #include "config.h"
+#include "log.h"
 
 namespace {
 
@@ -37,7 +38,7 @@ void vbandSettingsBegin() {
     prefs.putString(KEY_NAME, name);
   }
   prefs.end();
-  Serial.println("VBand name: " + name + ", room: " + room + ", channel: " + String(channel));
+  Log.println("VBand name: " + name + ", room: " + room + ", channel: " + String(channel));
 }
 
 const String &vbandSettingsName() {
@@ -59,7 +60,7 @@ void vbandSettingsSaveChannel(int channelIndex) {
   prefs.begin(NVS_NAMESPACE, false);
   prefs.putInt(KEY_CHANNEL, channel);
   prefs.end();
-  Serial.println("Saved VBand channel: " + String(channel));
+  Log.println("Saved VBand channel: " + String(channel));
 }
 
 void vbandSettingsSave(const String &newName, const String &newRoom) {
@@ -73,5 +74,5 @@ void vbandSettingsSave(const String &newName, const String &newRoom) {
   prefs.putString(KEY_NAME, name);
   prefs.putString(KEY_ROOM, room);
   prefs.end();
-  Serial.println("Saved VBand name: " + name + ", room: " + room);
+  Log.println("Saved VBand name: " + name + ", room: " + room);
 }
