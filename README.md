@@ -125,6 +125,9 @@ The last channel joined is remembered and rejoined after a reboot.
 - Off in the lobby, or when off VBand on purpose.
 - After each join, flashes the channel number (or `C`) in Morse.
 - While joined, lights with your keying (the `vb.led` setting).
+- If the connection drops, the LED starts blinking right away, but what's already been received keeps playing (and
+  showing on the keyer) at the sender's speed. After a long, fast message that can run on for a while. That's on
+  purpose: it's real sending, just behind. Nothing sent during the drop arrives later.
 
 ## Soft power latch
 

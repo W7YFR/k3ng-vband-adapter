@@ -52,15 +52,18 @@ void roomUsersListComplete(const String &listChannel) {
   if (!listing || listChannel != channel) return;
   listing = false;
 
-  if (known) {
-    for (const User &user : pending) {
-      if (!contains(users, user.id)) displayUserJoined(user.tag);
-    }
-    for (const User &user : users) {
-      if (!contains(pending, user.id)) displayUserLeft(user.tag);
-    }
+  bool changed = !known; // a join sees more than one reply, and the list is polled: log only news
+  for (const User &user : pending) {
+    if (contains(users, user.id)) continue;
+    changed = true;
+    if (known) displayUserJoined(user.tag);
   }
-  Log.printf("Room %s: %u others\n", channel.c_str(), (unsigned)pending.size());
+  for (const User &user : users) {
+    if (contains(pending, user.id)) continue;
+    changed = true;
+    if (known) displayUserLeft(user.tag);
+  }
+  if (changed) Log.printf("Room %s: %u others\n", channel.c_str(), (unsigned)pending.size());
   users = pending;
   known = true;
 }
