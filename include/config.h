@@ -220,3 +220,9 @@
 // to silence it.
 #define DIAGNOSTICS_LOG
 #define DIAGNOSTICS_INTERVAL_MS 5000
+// Why it last went away (diagnostics.cpp): the last DIAG_EVENTS resets
+// (other than power-on and our own restarts), WiFi drops and unexpected
+// VBand drops, kept in NVS so they survive a reboot or power cycle. /DIAG
+// shows the latest and logs them all. Saved at most every DIAG_SAVE_MS.
+#define DIAG_EVENTS 8
+#define DIAG_SAVE_MS 10000

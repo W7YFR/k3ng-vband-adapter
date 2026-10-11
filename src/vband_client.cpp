@@ -232,7 +232,7 @@ void onWsEvent(WStype_t type, uint8_t *payload, size_t length) {
       break;
     case WStype_DISCONNECTED:
       Log.println("WS disconnected");
-      diagnosticsNoteWsDisconnect();
+      diagnosticsNoteWsDisconnect(connected && connectionWanted && !quietDisconnect);
       // Fires again on every failed reconnect attempt, roughly every 5s.
       if (quietDisconnect) {
         quietDisconnect = false;

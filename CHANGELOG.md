@@ -13,6 +13,11 @@ Builds show their git commit at boot and in `/DIAG`. The keyer link protocol is 
   last 32 lines, so you see what happened before you plugged in. Log frames (`LG` / `LGP`) only go out while nothing
   else is waiting on the link; if they can't keep up, lines are dropped with a note. The per-element `TX` / `RX`
   lines stay on the adapter's own USB port.
+- Why it went away: the last 8 resets (brownout, crash, watchdog, ...; not power-on or its own restarts), WiFi
+  drops (reason code and signal) and unexpected VBand drops (how long the server had been silent, and signal) are
+  kept in NVS across reboots and power cycles. `/LAST` shows the latest three on the keyer; `/LAST` and `/DIAG` log
+  the whole list, and it's logged at every boot with the reset reason. Failed reconnect attempts, `/DIS` and going
+  to the lobby aren't recorded as drops.
 
 ## 2026-10-05: settings
 

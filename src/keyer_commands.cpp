@@ -23,7 +23,7 @@ struct Action {
 const Action ACTIONS[] = {
     {"CON", "Connect"},      {"DIS", "Disconnect"},   {"WHO", "Who's here"},    {"CH", "Next channel"},
     {"BUSY", "Busiest room"}, {"ROOMS", "Room counts"}, {"LOBBY", "To lobby"},  {"OTA", "OTA 10 min"},
-    {"AP", "WiFi setup"},    {"OFF", "Power off"},    {"DIAG", "Diagnostics"},
+    {"AP", "WiFi setup"},    {"OFF", "Power off"},    {"DIAG", "Diagnostics"}, {"LAST", "Last drops"},
 };
 constexpr int ACTION_COUNT = sizeof(ACTIONS) / sizeof(ACTIONS[0]);
 
@@ -124,6 +124,10 @@ void runCommand(const String &word) {
     powerOffNow();
   } else if (word == "DIAG") {
     displayDiagnostics(diagnosticsSummary());
+    diagnosticsLogEvents();
+  } else if (word == "LAST") {
+    displayDiagnostics(diagnosticsLastEvents());
+    diagnosticsLogEvents();
   } else if (word == "H" || word == "HELP") {
     displayCommandHelp();
   } else {

@@ -180,7 +180,7 @@ void displayDiagnostics(const String &rows) {
 }
 
 void displayCommandHelp() {
-  show(SHOW_ROOM_MS, "WHO CH BUSY ROOMS|LOBBY CON DIS OTA|AP OFF DIAG");
+  show(SHOW_ROOM_MS, "WHO CH BUSY ROOMS|LOBBY CON DIS OTA|AP OFF DIAG LAST");
 }
 
 void displayUnknownCommand(const String &word) {

@@ -15,6 +15,16 @@ void diagnosticsBegin();
 // disconnects, and the worst gap in someone's sending / playback drops
 // since boot.
 String diagnosticsSummary();
+
+// The latest kept events for the keyer's display ("/LAST"), newest first,
+// as many as fit: "Brownout -2b" (two boots ago), "WiFi r200 12m" (12
+// minutes ago, reason code 200), "Reset: crash" (what started this boot).
+String diagnosticsLastEvents();
+
+// Logs the kept events, oldest first: resets (with esp_reset_reason()),
+// WiFi drops (with the reason code) and unexpected VBand drops, each with
+// its boot number, time since that boot and signal strength.
+void diagnosticsLogEvents();
 void diagnosticsLoop();
 
 // Times one part of loop(): diagnosticsStageStart() before it,
@@ -28,4 +38,6 @@ void diagnosticsNoteSmk();           // someone else's keying
 void diagnosticsNoteQueueDepth(int depth);
 void diagnosticsNoteQueueDrop();
 void diagnosticsNoteToneMs(unsigned long ms);
-void diagnosticsNoteWsDisconnect();
+// Every WebSocket disconnect, including each failed reconnect attempt;
+// unexpected: it was connected and nobody asked it to go (kept as an event).
+void diagnosticsNoteWsDisconnect(bool unexpected);
