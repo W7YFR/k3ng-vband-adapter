@@ -5,7 +5,9 @@
 #include "vband_client.h"
 #include "sidetone.h"
 #include "ota_updater.h"
+#include "log.h"
 #include "config.h"
+#include "log.h"
 
 namespace {
 
@@ -30,6 +32,7 @@ const Definition DEFINITIONS[] = {
     {"TONE", "Tone", 'n', 300, 1200, 10, "Hz", AUDIO_TONE_HZ},
     {"FADE", "Fade", 'n', 0, AUDIO_RAMP_MAX_MS, 1, "ms", AUDIO_RAMP_MS},
     {"WIN", "Switch win", 'n', 3, 30, 1, "s", CHANNEL_SWITCH_WINDOW_S},
+    {"LOG", "Log to USB", 'b', 0, 1, 1, "", 0}, // never saved: off at power-on
 };
 constexpr int NUMBERS = (int)AdapterSetting::Count;
 static_assert(sizeof(DEFINITIONS) / sizeof(DEFINITIONS[0]) == NUMBERS, "one definition per AdapterSetting");
@@ -51,6 +54,7 @@ void apply(int n) {
   if (n == (int)AdapterSetting::Fade) sidetoneSetFadeMs(values[n]);
   if (n == (int)AdapterSetting::Volume) sidetoneSetVolume(values[n]);
   if (n == (int)AdapterSetting::Ota) otaSetMode(values[n]);
+  if (n == (int)AdapterSetting::Log) logForwardSet(values[n]);
 }
 
 // An option's index from its number or (case-insensitive) name, or -1.
@@ -80,6 +84,7 @@ void adapterSettingsBegin() {
   }
   prefs.end();
   if (values[(int)AdapterSetting::Ota] == OTA_MODE_WINDOW) values[(int)AdapterSetting::Ota] = OTA_MODE_OFF;
+  values[(int)AdapterSetting::Log] = 0;
 }
 
 int adapterSetting(AdapterSetting setting) {
@@ -133,13 +138,15 @@ int adapterSettingSet(const String &key, const String &value) {
   number = constrain(number, DEFINITIONS[n].min, DEFINITIONS[n].max);
   if (number == values[n] && n != (int)AdapterSetting::Ota) return i; // OTA: choosing 10min again restarts it
   values[n] = number;
-  Preferences prefs;
-  prefs.begin(NVS_NAMESPACE, false);
-  // An OTA window is for now; after a reboot it's off.
-  prefs.putInt(DEFINITIONS[n].key, (n == (int)AdapterSetting::Ota && number == OTA_MODE_WINDOW) ? OTA_MODE_OFF : number);
-  prefs.end();
+  if (n != (int)AdapterSetting::Log) { // log forwarding is for now; after a reboot it's off
+    Preferences prefs;
+    prefs.begin(NVS_NAMESPACE, false);
+    // An OTA window is for now; after a reboot it's off.
+    prefs.putInt(DEFINITIONS[n].key, (n == (int)AdapterSetting::Ota && number == OTA_MODE_WINDOW) ? OTA_MODE_OFF : number);
+    prefs.end();
+  }
   apply(n);
-  Serial.printf("Setting %s = %d\n", DEFINITIONS[n].key, number);
+  Log.printf("Setting %s = %d\n", DEFINITIONS[n].key, number);
   return i;
 }
 

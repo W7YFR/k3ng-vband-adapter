@@ -3,10 +3,12 @@
 #include "pins.h"
 #include "config.h"
 #include "display_events.h"
+#include "log.h"
 
 namespace {
 
 HardwareSerial &megaSerial = Serial2;
+constexpr size_t TX_BUFFER = 256;
 
 MegaLinkFrameCallback frameCallback = nullptr;
 
@@ -65,7 +67,7 @@ void checkVersion(const String &fields) {
   versionChecked = true;
   int theirs = peerProtocol(fields);
   if (theirs == MEGA_LINK_PROTOCOL_VERSION) return;
-  Serial.printf("Keyer link protocol %d, ours %d\n", theirs, MEGA_LINK_PROTOCOL_VERSION);
+  Log.printf("Keyer link protocol %d, ours %d\n", theirs, MEGA_LINK_PROTOCOL_VERSION);
   displayLinkMismatch(theirs, MEGA_LINK_PROTOCOL_VERSION);
 }
 
@@ -79,11 +81,11 @@ void setLinkUp(bool up) {
   if (up == linkUp) return;
   linkUp = up;
   if (up) {
-    Serial.println("Mega link up");
+    Log.println("Mega link up");
     badFrames = 0;
   } else {
     versionChecked = false; // whatever comes back may have been reflashed
-    Serial.printf("Mega link down (%u bad frames from the keyer since it came up)\n", badFrames);
+    Log.printf("Mega link down (%u bad frames from the keyer since it came up)\n", badFrames);
   }
 }
 
@@ -140,7 +142,7 @@ void megaLinkBegin() {
   rxFrame.reserve(MEGA_LINK_MAX_FRAME);
   // Must be set before begin(); without a TX ring buffer, writes wait on
   // the hardware FIFO and availableForWrite() can't be trusted to never block.
-  megaSerial.setTxBufferSize(256);
+  megaSerial.setTxBufferSize(TX_BUFFER);
   megaSerial.begin(MEGA_LINK_BAUD, SERIAL_8N1, PIN_MEGA_RX, PIN_MEGA_TX);
   sendHi();
 }
@@ -162,6 +164,10 @@ bool megaLinkUp() {
 bool megaLinkSend(const String &type, const String &fields, bool evenIfDown) {
   if (!linkUp && !evenIfDown) return false;
   return sendFrame(fields.length() ? type + "," + fields : type);
+}
+
+bool megaLinkIdle() {
+  return megaSerial.availableForWrite() >= (int)(TX_BUFFER - MEGA_LINK_MAX_FRAME);
 }
 
 void megaLinkSetVbandReady(bool ready) {

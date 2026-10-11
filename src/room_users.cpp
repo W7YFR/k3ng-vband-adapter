@@ -3,6 +3,7 @@
 #include "room_users.h"
 #include "user_tag.h"
 #include "display_events.h"
+#include "log.h"
 
 namespace {
 
@@ -59,7 +60,7 @@ void roomUsersListComplete(const String &listChannel) {
       if (!contains(pending, user.id)) displayUserLeft(user.tag);
     }
   }
-  Serial.printf("Room %s: %u others\n", channel.c_str(), (unsigned)pending.size());
+  Log.printf("Room %s: %u others\n", channel.c_str(), (unsigned)pending.size());
   users = pending;
   known = true;
 }

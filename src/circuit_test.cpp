@@ -8,6 +8,7 @@
 #include "display_events.h"
 #include "pins.h"
 #include "config.h"
+#include "log.h"
 
 namespace {
 
@@ -39,7 +40,7 @@ int nextTestScreen = 0;
 void sendNextTestScreen() {
   const char *screen = TEST_SCREENS[nextTestScreen];
   bool sent = megaLinkSend("ST", screen, true);
-  Serial.printf("Test screen %d %s (link %s): %s\n", nextTestScreen + 1,
+  Log.printf("Test screen %d %s (link %s): %s\n", nextTestScreen + 1,
                 sent ? "sent" : "dropped", megaLinkUp() ? "up" : "down", screen);
   nextTestScreen = (nextTestScreen + 1) % TEST_SCREEN_COUNT;
 }
@@ -85,9 +86,9 @@ void circuitTestLoop() {
   if (key.update()) {
     if (key.activeNow()) {
       keyDownMs = millis();
-      Serial.println("Key down");
+      Log.println("Key down");
     } else {
-      Serial.printf("Key up after %lu ms\n", millis() - keyDownMs);
+      Log.printf("Key up after %lu ms\n", millis() - keyDownMs);
     }
   }
 

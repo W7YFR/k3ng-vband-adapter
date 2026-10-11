@@ -9,6 +9,7 @@
 #include "display_events.h"
 #include "mega_link.h"
 #include "adapter_settings.h"
+#include "log.h"
 
 namespace {
 
@@ -48,14 +49,14 @@ void startListening() {
   if (listening) return;
   ArduinoOTA.begin();
   listening = true;
-  Serial.println("OTA listening");
+  Log.println("OTA listening");
 }
 
 void stopListening() {
   if (!listening) return;
   ArduinoOTA.end();
   listening = false;
-  Serial.println("OTA off");
+  Log.println("OTA off");
 }
 
 }  // namespace
@@ -66,7 +67,7 @@ void otaBegin() {
     ArduinoOTA.setPassword(OTA_PASSWORD);
   }
   ArduinoOTA.onStart([]() {
-    Serial.println("OTA update starting");
+    Log.println("OTA update starting");
     // loop() is stuck here until the update ends, so nothing we key can
     // reach VBand -- put the keyer back on its radio meanwhile.
     megaLinkSetVbandReady(false);
@@ -81,7 +82,7 @@ void otaBegin() {
     displayOtaProgress(progress, total); // also keeps the keyer link from timing out
   });
   ArduinoOTA.onEnd([]() {
-    Serial.println("OTA update complete");
+    Log.println("OTA update complete");
     displayOtaDone();
     megaLinkSendBye("OTA");
     // ArduinoOTA restarts right after this returns (the uploader has
@@ -91,7 +92,7 @@ void otaBegin() {
     ledFlashSuccess();  // visible before the reboot
   });
   ArduinoOTA.onError([](ota_error_t error) {
-    Serial.println("OTA error [" + String(error) + "]");
+    Log.println("OTA error [" + String(error) + "]");
     displayOtaFailed(); // loop() resumes after this and restores "VB" from vbandIsReady()
     setLed(false);
     flashOtaFailure();
@@ -129,7 +130,7 @@ void otaLoop() {
     stopListening();
     windowOpen = false;
     adapterSettingOtaWindowEnded();
-    Serial.println("OTA window closed");
+    Log.println("OTA window closed");
     displayOtaWindowClosed();
   }
 }

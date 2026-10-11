@@ -7,6 +7,13 @@ Builds show their git commit at boot and in `/DIAG`. The keyer link protocol is 
 
 ## Unreleased
 
+### Added
+- Log forwarding (`vb.log`, off at every power-on, never saved): the adapter's log also goes over the link to the
+  keyer, which prints it on its USB port, the only one reachable with the adapter in its case. It starts with the
+  last 32 lines, so you see what happened before you plugged in. Log frames (`LG` / `LGP`) only go out while nothing
+  else is waiting on the link; if they can't keep up, lines are dropped with a note. The per-element `TX` / `RX`
+  lines stay on the adapter's own USB port.
+
 ## 2026-10-05: settings
 
 ### Added

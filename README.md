@@ -74,6 +74,7 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 | `vb.tone` | 700 Hz | The first sender's pitch, 300-1200 Hz |
 | `vb.fade` | 5 ms | Sidetone fade in/out, 0-20 ms |
 | `vb.win` | 10 s | Channel button: how soon a second press switches channel, 3-30 s |
+| `vb.log` | off | Forward this log to the keyer's USB port (see Diagnostics). Not saved: off at every power-on |
 
 Three ways to reach them:
 - **Menu:** in command mode, key `/` and pause. Dit (`E`) moves down, dah (`T`) up, `R` opens a group, toggles an on/off setting, runs a command, or starts and saves a change (dit/dah lower and raise the value meanwhile), and `B` or `< Back` go back a level. `X`, the command button, or `B` on the top level leave command mode. The VBand group first offers Commands (the ones below) or Settings; running a command shows its answer, then the menu comes back where you were (a paddle touch skips the wait).
@@ -92,6 +93,7 @@ The keyer only offers the settings its build supports (Farnsworth with `FEATURE_
 | ESP -> keyer | `ST,<ms>,<row>\|<row>...` | Status screen, up to 4 rows |
 | ESP -> keyer | `RX,<tag>,<text>` | Decoded text from another station |
 | ESP -> keyer | `SYS,<text>` | A line of its own, e.g. "X joined" |
+| ESP -> keyer | `LG,<text>` / `LGP,<text>` | A line of this log, or part of a longer one (more follows), with `vb.log` on; the keyer prints it on its USB port |
 | ESP -> keyer | `BYE,<reason>` | About to reboot or power off (`OTA`, `OFF`, `AP`) |
 | keyer -> ESP | `CK,<word>` | Is this a command? |
 | ESP -> keyer | `CR,1` / `CR,0` | Known / unknown |
@@ -221,6 +223,17 @@ pio device monitor -e wemos_d1_mini32 | tee diag-log.txt   # -e: the default env
 ```
 
 `/DIAG` on the keyer shows a summary on its display.
+
+**Without opening the case.** Only the keyer's USB port can be reached with the adapter in its case. Turn on
+`vb.log` (`\$ vb.log on` in the keyer's CLI, or the menu) and this log also comes out of the keyer's port, each line
+starting `ESP> `; it starts with the last 32 lines, so you see what happened before you plugged in. A log line goes
+over the link only when nothing else is waiting, at most one frame every 40 ms; if they can't keep up, they're dropped
+with a "(N lines dropped)" note. The per-element `TX space=` / `RX ... space=` lines stay on the adapter's own port.
+`vb.log` turns itself off at power-on. On the keyer, with the USB port in Winkey mode nothing is printed.
+
+```bash
+pio device monitor -e w7yfr | tee diag-log.txt   # in the keyer's repo
+```
 
 ## Notes for future changes
 
