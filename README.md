@@ -56,6 +56,7 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 | `/AP` | Restart into the WiFi / VBand settings portal |
 | `/OFF` | Power off (on USB it can't, and says so) |
 | `/DIAG` | Signal, uptime, disconnects, worst gap in received sending, dropped elements |
+| `/LAST` | The latest resets and drops, newest first, kept across reboots (see Diagnostics) |
 | `/H` | The list |
 
 **Settings.** With `FEATURE_SETTINGS_MENU` on the keyer, the adapter's settings sit alongside the keyer's own, in groups: `ky` (keyer), `st` (sidetone) and `vb` (this adapter). They're saved on whichever board owns them (the adapter's in NVS), so they survive reboots and reflashing; the defaults are in `config.h`.
@@ -223,6 +224,14 @@ pio device monitor -e wemos_d1_mini32 | tee diag-log.txt   # -e: the default env
 ```
 
 `/DIAG` on the keyer shows a summary on its display.
+
+**Why it went away.** The adapter keeps its last 8 resets and drops in NVS, so they survive a reboot or a power
+cycle: resets other than power-on and its own restarts (OTA, the portal), with the reason (`brownout`, `crash`,
+`watchdog`, ...); WiFi drops, with the reason code and signal; and VBand drops it didn't ask for. Failed reconnect
+attempts aren't counted again, and the same thing repeated in one boot shows once with a count. `/LAST` shows the
+latest three on the keyer: `Brownout -2b` (two boots ago), `WiFi r200 12m` (12 minutes ago, reason code 200),
+`Reset: crash` (what started this boot). `/LAST` and `/DIAG` also log the whole list, with the reasons' names, and
+it's logged at every boot after a `DIAG boot <n>, reset: <reason>` line.
 
 **Without opening the case.** Only the keyer's USB port can be reached with the adapter in its case. Turn on
 `vb.log` (`\$ vb.log on` in the keyer's CLI, or the menu) and this log also comes out of the keyer's port, each line
