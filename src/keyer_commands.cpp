@@ -18,12 +18,16 @@ namespace {
 struct Action {
   const char *word;
   const char *label;
+  char group; // the keyer's menu list it goes in (MENU_GROUP_*)
 };
 // In menu order; Connect / Disconnect first (only the one that applies is listed).
 const Action ACTIONS[] = {
-    {"CON", "Connect"},      {"DIS", "Disconnect"},   {"WHO", "Who's here"},    {"CH", "Next channel"},
-    {"BUSY", "Busiest room"}, {"ROOMS", "Room counts"}, {"LOBBY", "To lobby"},  {"OTA", "OTA 10 min"},
-    {"AP", "WiFi setup"},    {"OFF", "Power off"},    {"DIAG", "Diagnostics"}, {"LAST", "Last drops"},
+    {"CON", "Connect", MENU_GROUP_NONE},          {"DIS", "Disconnect", MENU_GROUP_NONE},
+    {"WHO", "Who's here", MENU_GROUP_NONE},       {"CH", "Next channel", MENU_GROUP_ROOMS},
+    {"BUSY", "Busiest room", MENU_GROUP_ROOMS},   {"ROOMS", "Room counts", MENU_GROUP_ROOMS},
+    {"LOBBY", "To lobby", MENU_GROUP_ROOMS},      {"OTA", "OTA 10 min", MENU_GROUP_DEVICE},
+    {"AP", "WiFi setup", MENU_GROUP_DEVICE},      {"OFF", "Power off", MENU_GROUP_DEVICE},
+    {"DIAG", "Diagnostics", MENU_GROUP_DEVICE},   {"LAST", "Last drops", MENU_GROUP_DEVICE},
 };
 constexpr int ACTION_COUNT = sizeof(ACTIONS) / sizeof(ACTIONS[0]);
 
@@ -66,7 +70,7 @@ void sendListItem(int n) {
     megaLinkSend("SI", index + adapterSettingDescription(i));
   } else {
     const Action &a = ACTIONS[i - settings];
-    megaLinkSend("SI", index + a.word + "," + a.label + ",a");
+    megaLinkSend("SI", index + a.group + "," + a.word + "," + a.label + ",a");
   }
 }
 

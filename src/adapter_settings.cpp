@@ -14,25 +14,26 @@ namespace {
 struct Definition {
   const char *key;   // also the NVS key and the keyed/CLI name (VB.<key>)
   const char *label; // the keyer's menu row, up to 10 characters
+  char group;        // the keyer's menu list it goes in (MENU_GROUP_*)
   char type;         // 'b' on/off, 'n' number, 'e' one of the options
   int min, max, step;
   const char *unit;  // for 'e', the options' names, |-separated
   int defaultValue;
 };
 
-// In AdapterSetting order.
+// In AdapterSetting order, which is also their order within each menu list.
 const Definition DEFINITIONS[] = {
-    {"START", "On startup", 'e', 0, 3, 1, "Off|Lobby|Last|Custom", VBAND_START_DEFAULT},
-    {"OTA", "OTA", 'e', 0, 2, 1, "Off|On|10min", OTA_MODE_DEFAULT},
-    {"RX", "Received", 'e', 0, 2, 1, "Text|Sender|Off", RX_SHOW_DEFAULT},
-    {"JOIN", "Joins", 'b', 0, 1, 1, "", JOIN_NOTICES_DEFAULT},
-    {"VOL", "Volume", 'n', 0, 100, 5, "%", AUDIO_VOLUME_DEFAULT},
-    {"LED", "LED keying", 'b', 0, 1, 1, "", LED_FOLLOWS_KEY_DEFAULT},
-    {"PITCH", "Pitches", 'b', 0, 1, 1, "", AUDIO_TONE_PER_SENDER_DEFAULT},
-    {"TONE", "Tone", 'n', 300, 1200, 10, "Hz", AUDIO_TONE_HZ},
-    {"FADE", "Fade", 'n', 0, AUDIO_RAMP_MAX_MS, 1, "ms", AUDIO_RAMP_MS},
-    {"WIN", "Switch win", 'n', 3, 30, 1, "s", CHANNEL_SWITCH_WINDOW_S},
-    {"LOG", "Log to USB", 'b', 0, 1, 1, "", 0}, // never saved: off at power-on
+    {"START", "On startup", MENU_GROUP_ROOMS, 'e', 0, 3, 1, "Off|Lobby|Last|Custom", VBAND_START_DEFAULT},
+    {"OTA", "OTA", MENU_GROUP_DEVICE, 'e', 0, 2, 1, "Off|On|10min", OTA_MODE_DEFAULT},
+    {"RX", "Received", MENU_GROUP_DISPLAY, 'e', 0, 2, 1, "Text|Sender|Off", RX_SHOW_DEFAULT},
+    {"JOIN", "Joins", MENU_GROUP_DISPLAY, 'b', 0, 1, 1, "", JOIN_NOTICES_DEFAULT},
+    {"VOL", "Volume", MENU_GROUP_SOUND, 'n', 0, 100, 5, "%", AUDIO_VOLUME_DEFAULT},
+    {"LED", "LED keying", MENU_GROUP_DISPLAY, 'b', 0, 1, 1, "", LED_FOLLOWS_KEY_DEFAULT},
+    {"TONE", "Tone", MENU_GROUP_SOUND, 'n', 300, 1200, 10, "Hz", AUDIO_TONE_HZ},
+    {"PITCH", "Pitches", MENU_GROUP_SOUND, 'b', 0, 1, 1, "", AUDIO_TONE_PER_SENDER_DEFAULT},
+    {"FADE", "Fade", MENU_GROUP_SOUND, 'n', 0, AUDIO_RAMP_MAX_MS, 1, "ms", AUDIO_RAMP_MS},
+    {"WIN", "Switch win", MENU_GROUP_ROOMS, 'n', 3, 30, 1, "s", CHANNEL_SWITCH_WINDOW_S},
+    {"LOG", "Log to USB", MENU_GROUP_DEVICE, 'b', 0, 1, 1, "", 0}, // never saved: off at power-on
 };
 constexpr int NUMBERS = (int)AdapterSetting::Count;
 static_assert(sizeof(DEFINITIONS) / sizeof(DEFINITIONS[0]) == NUMBERS, "one definition per AdapterSetting");
@@ -41,6 +42,7 @@ static_assert(sizeof(DEFINITIONS) / sizeof(DEFINITIONS[0]) == NUMBERS, "one defi
 enum Text { Name, Room, TEXTS };
 const char *const TEXT_KEYS[TEXTS] = {"NAME", "ROOM"};
 const char *const TEXT_LABELS[TEXTS] = {"Name", "Room"};
+const char TEXT_GROUPS[TEXTS] = {MENU_GROUP_DEVICE, MENU_GROUP_ROOMS};
 
 constexpr const char *NVS_NAMESPACE = "settings";
 int values[NUMBERS];
@@ -96,9 +98,9 @@ int adapterSettingsCount() {
 }
 
 String adapterSettingDescription(int i) {
-  if (i < TEXTS) return String(TEXT_KEYS[i]) + "," + TEXT_LABELS[i] + ",s," + textValue(i);
+  if (i < TEXTS) return String(TEXT_GROUPS[i]) + "," + TEXT_KEYS[i] + "," + TEXT_LABELS[i] + ",s," + textValue(i);
   const Definition &d = DEFINITIONS[i - TEXTS];
-  return String(d.key) + "," + d.label + "," + d.type + "," + values[i - TEXTS] + "," + d.min + "," + d.max +
+  return String(d.group) + "," + d.key + "," + d.label + "," + d.type + "," + values[i - TEXTS] + "," + d.min + "," + d.max +
          "," + d.step + "," + d.unit;
 }
 

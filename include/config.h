@@ -194,7 +194,8 @@
 // message format) -- new message types don't need it, since both sides
 // ignore types they don't know. Keep it in step with
 // VBAND_LINK_PROTOCOL_VERSION on the keyer.
-#define MEGA_LINK_PROTOCOL_VERSION 1
+// 2: SI items carry the menu list they go in (MENU_GROUP_*).
+#define MEGA_LINK_PROTOCOL_VERSION 2
 
 // Log forwarding (log.cpp): with VB.LOG on, everything printed to the USB
 // serial port is also sent to the keyer, which prints it on its own USB
