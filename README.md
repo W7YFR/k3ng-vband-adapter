@@ -41,7 +41,7 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 - **The lobby and room counts:** connected to VBand but in no channel, so nothing you key goes anywhere (the keyer stays on its radio). On connecting, the keyer shows how many are in each room (`Lobby`, `Prac`tice, `Ch` 1-5, your custom room) for a few seconds before joining; `/ROOMS` shows them again, `/BUSY` joins the busiest channel.
 - Status screens you asked for aren't wiped by incoming text; the conversation shows again when they time out.
 
-**Keyer commands.** In the keyer's command mode, key `/` then a word and pause for a word space. The keyer checks the word with the ESP32 first: an unknown one shows "Unknown /XYZ" so you can try again; a known one runs, and its answer shows in command mode until it times out. Either way you stay in command mode: it only exits with the command button, `X`, or `B` on the menu's top level.
+**Keyer commands.** In the keyer's command mode, key `/` then a word and pause for a word space. The keyer checks the word with the ESP32 first: an unknown one shows "Unknown /XYZ" so you can try again; a known one runs, and its answer shows in command mode until it times out. Either way you stay in command mode: it only exits with the command button, `X`, or the menu's `< Exit` row.
 
 | Command | Does |
 |---|---|
@@ -78,7 +78,7 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 | `vb.log` | off | Forward this log to the keyer's USB port (see Diagnostics). Not saved: off at every power-on |
 
 Three ways to reach them:
-- **Menu:** in command mode, key `/` and pause. Dit (`E`) moves down, dah (`T`) up, `R` opens a group, toggles an on/off setting, runs a command, or starts and saves a change (dit/dah lower and raise the value meanwhile), and `B` or `< Back` go back a level. `X`, the command button, or `B` on the top level leave command mode. The VBand group first offers Commands (the ones below) or Settings; running a command shows its answer, then the menu comes back where you were (a paddle touch skips the wait).
+- **Menu:** in command mode, key `/` and pause. Dit (`E`) moves down, dah (`T`) up, `R` opens a group, toggles an on/off setting, runs a command, or starts and saves a change (dit/dah lower and raise the value meanwhile), and `B` or `< Back` go back a level (`B` on the top level closes the menu). `X`, the command button, or `< Exit` leave command mode. The VBand group first offers Commands (the ones below) or Settings; each opens with its most-used rows (Connect or Disconnect, Who's here) above the lists Rooms, Sound, Display and Device, which hold the rest. Running a command shows its answer, then the menu comes back where you were (a paddle touch skips the wait).
 - **Keyed shortcuts:** `/VB LED OFF`, `/KY WPM 22`, `/VB NAME W7YFR`; leave off the value to see the current one, or key just the group (`/VB`) and pause to open its menu.
 - **The keyer's CLI:** `\$` lists everything, `\$ vb` a group, `\$ vb.fade` one setting, `\$ vb.fade 8` sets it (`\$ vb.name Rob W7YFR` keeps your capitals and drops the spaces).
 
@@ -100,7 +100,7 @@ The keyer only offers the settings its build supports (Farnsworth with `FEATURE_
 | ESP -> keyer | `CR,1` / `CR,0` | Known / unknown |
 | keyer -> ESP | `CMD,<word>` | Run it (sent after leaving command mode) |
 | keyer -> ESP | `SL` / `SL,s` / `SL,a` | List the settings and commands / just the settings / just the commands |
-| ESP -> keyer | `SI,<i>,<key>,<label>,<type>[,<value>,<min>,<max>,<step>,<unit>]` / `SE,<count>` | One per item (type `b` on/off, `n` number, `e` one of the options named in `<unit>`, separated by bars, `s` text, `a` command), then the end |
+| ESP -> keyer | `SI,<i>,<group>,<key>,<label>,<type>[,<value>,<min>,<max>,<step>,<unit>]` / `SE,<count>` | One per item (type `b` on/off, `n` number, `e` one of the options named in `<unit>`, separated by bars, `s` text, `a` command), then the end. `<group>` is the keyer menu list it goes in under VBand > Settings or Commands: `R` Rooms, `A` Sound, `D` Display, `H` Device, `-` none (since protocol 2) |
 | keyer -> ESP | `SG,<key>` / `SS,<key>,<value>` | Read / set a setting |
 | ESP -> keyer | `SV,<key>,<value>` | Its value (`?` if there's no such setting) |
 

@@ -3,7 +3,7 @@
 VBand ESP32 adapter (Wemos D1 Mini32). Part of the [Stellaluna Keyer](https://github.com/W7YFR/stellaluna); the
 keyer side is [W7YFR/k3ng_cw_keyer](https://github.com/W7YFR/k3ng_cw_keyer).
 
-Builds show their git commit at boot and in `/DIAG`. The keyer link protocol is version 1.
+Builds show their git commit at boot and in `/DIAG`. The keyer link protocol is version 2.
 
 ## Unreleased
 
@@ -18,6 +18,10 @@ Builds show their git commit at boot and in `/DIAG`. The keyer link protocol is 
   kept in NVS across reboots and power cycles. `/LAST` shows the latest three on the keyer; `/LAST` and `/DIAG` log
   the whole list, and it's logged at every boot with the reset reason. Failed reconnect attempts, `/DIS` and going
   to the lobby aren't recorded as drops.
+
+- Menu groups (link protocol 2: flash the keyer too): each setting and command the keyer lists says which menu
+  list it goes in (`SI,<i>,<group>,...`), so the keyer shows VBand > Commands and Settings each with their
+  most-used rows on top and the rest under Rooms, Sound, Display and Device. Tone now comes before Pitches.
 
 ### Fixed
 - "Room X: N others" is logged when the count or who's there changes: once per join instead of twice, and no longer

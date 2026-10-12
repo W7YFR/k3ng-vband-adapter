@@ -11,7 +11,15 @@
 // The list the keyer gets also carries the commands (keyer_commands.cpp)
 // as actions, so its menu shows everything in one place.
 
-enum class AdapterSetting { Start, Ota, Rx, Join, Volume, Led, Pitch, Tone, Fade, Window, Log, Count };
+// The keyer's menu list each setting or command goes in, under VBand >
+// Settings or VBand > Commands; the keyer knows these letters' names.
+#define MENU_GROUP_NONE '-'    // directly in Settings / Commands
+#define MENU_GROUP_ROOMS 'R'
+#define MENU_GROUP_SOUND 'A'
+#define MENU_GROUP_DISPLAY 'D'
+#define MENU_GROUP_DEVICE 'H'
+
+enum class AdapterSetting { Start, Ota, Rx, Join, Volume, Led, Tone, Pitch, Fade, Window, Log, Count };
 
 // VB.START: what to do at power-on.
 #define VBAND_START_OFF 0    // stay off VBand until /CON (or a channel is chosen)
