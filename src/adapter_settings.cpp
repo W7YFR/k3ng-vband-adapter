@@ -7,7 +7,6 @@
 #include "ota_updater.h"
 #include "log.h"
 #include "config.h"
-#include "log.h"
 
 namespace {
 
@@ -28,7 +27,12 @@ const Definition DEFINITIONS[] = {
     {"RX", "Received", MENU_GROUP_DISPLAY, 'e', 0, 2, 1, "Text|Sender|Off", RX_SHOW_DEFAULT},
     {"JOIN", "Joins", MENU_GROUP_DISPLAY, 'b', 0, 1, 1, "", JOIN_NOTICES_DEFAULT},
     {"VOL", "Volume", MENU_GROUP_SOUND, 'n', 0, 100, 5, "%", AUDIO_VOLUME_DEFAULT},
-    {"LED", "LED keying", MENU_GROUP_DISPLAY, 'b', 0, 1, 1, "", LED_FOLLOWS_KEY_DEFAULT},
+    {"LED", "Keying", MENU_GROUP_LED, 'b', 0, 1, 1, "", LED_FOLLOWS_KEY_DEFAULT},
+    {"ANN", "Channel", MENU_GROUP_LED, 'b', 0, 1, 1, "", LED_ANNOUNCE_JOIN_DEFAULT},
+    {"OTALED", "OTA", MENU_GROUP_LED, 'b', 0, 1, 1, "", LED_OTA_DEFAULT},
+    {"STATUS", "Status", MENU_GROUP_LED, 'b', 0, 1, 1, "", LED_STATUS_DEFAULT},
+    // Not a stored setting: where we are, and choosing one goes there.
+    {"CHAN", "Channel", MENU_COMMANDS_ROOMS, 'e', 0, 6, 1, VBAND_ROOM_CODES_OPTIONS, 0},
     {"TONE", "Tone", MENU_GROUP_SOUND, 'n', 300, 1200, 10, "Hz", AUDIO_TONE_HZ},
     {"PITCH", "Pitches", MENU_GROUP_SOUND, 'b', 0, 1, 1, "", AUDIO_TONE_PER_SENDER_DEFAULT},
     {"FADE", "Fade", MENU_GROUP_SOUND, 'n', 0, AUDIO_RAMP_MAX_MS, 1, "ms", AUDIO_RAMP_MS},
@@ -49,6 +53,17 @@ int values[NUMBERS];
 
 String textValue(int t) {
   return t == Name ? vbandSettingsName() : vbandSettingsRoom();
+}
+
+// The channel selector's options, as vbandRoomCode() gives them.
+int roomOption() {
+  const char *at = strchr(VBAND_ROOM_CODES, vbandRoomCode());
+  return at ? (int)(at - VBAND_ROOM_CODES) : 0;
+}
+
+// A setting's value: stored, or for the channel selector, where we are.
+int valueOf(int n) {
+  return n == (int)AdapterSetting::Channel ? roomOption() : values[n];
 }
 
 // Settings that take effect somewhere other than where they're read.
@@ -87,6 +102,7 @@ void adapterSettingsBegin() {
   prefs.end();
   if (values[(int)AdapterSetting::Ota] == OTA_MODE_WINDOW) values[(int)AdapterSetting::Ota] = OTA_MODE_OFF;
   values[(int)AdapterSetting::Log] = 0;
+  values[(int)AdapterSetting::Channel] = 0; // never stored: see valueOf()
 }
 
 int adapterSetting(AdapterSetting setting) {
@@ -100,7 +116,7 @@ int adapterSettingsCount() {
 String adapterSettingDescription(int i) {
   if (i < TEXTS) return String(TEXT_GROUPS[i]) + "," + TEXT_KEYS[i] + "," + TEXT_LABELS[i] + ",s," + textValue(i);
   const Definition &d = DEFINITIONS[i - TEXTS];
-  return String(d.group) + "," + d.key + "," + d.label + "," + d.type + "," + values[i - TEXTS] + "," + d.min + "," + d.max +
+  return String(d.group) + "," + d.key + "," + d.label + "," + d.type + "," + valueOf(i - TEXTS) + "," + d.min + "," + d.max +
          "," + d.step + "," + d.unit;
 }
 
@@ -138,6 +154,11 @@ int adapterSettingSet(const String &key, const String &value) {
   int number = DEFINITIONS[n].type == 'e' ? optionIndex(DEFINITIONS[n], value) : value.toInt();
   if (DEFINITIONS[n].type == 'e' && number < 0) return -1;
   number = constrain(number, DEFINITIONS[n].min, DEFINITIONS[n].max);
+  if (n == (int)AdapterSetting::Channel) {           // go there; nothing to keep
+    if (!vbandGoToRoom(VBAND_ROOM_CODES[number])) return -1;
+    Log.printf("Channel %c chosen\n", VBAND_ROOM_CODES[number]);
+    return i;
+  }
   if (number == values[n] && n != (int)AdapterSetting::Ota) return i; // OTA: choosing 10min again restarts it
   values[n] = number;
   if (n != (int)AdapterSetting::Log) { // log forwarding is for now; after a reboot it's off
@@ -158,5 +179,5 @@ void adapterSettingOtaWindowEnded() {
 
 String adapterSettingValueText(int i) {
   if (i < TEXTS) return textValue(i);
-  return String(values[i - TEXTS]);
+  return String(valueOf(i - TEXTS));
 }

@@ -30,6 +30,7 @@ void setLed(bool on) {
 // Fast flicker while data is arriving. Driven by onProgress rather than a
 // timer, so the LED freezes if the upload stalls.
 void flickerOtaProgress() {
+  if (!adapterSetting(AdapterSetting::OtaLed)) return;
   unsigned long now = millis();
   if (now - lastProgressToggleMs < OTA_PROGRESS_FLASH_MS) return;
   lastProgressToggleMs = now;
@@ -40,6 +41,7 @@ void flickerOtaProgress() {
 // One long flash so a failed upload looks different from success. The
 // board keeps running the old firmware afterward.
 void flashOtaFailure() {
+  if (!adapterSetting(AdapterSetting::OtaLed)) return;
   setLed(true);
   delay(OTA_FAILURE_FLASH_MS);
   setLed(false);
@@ -89,7 +91,7 @@ void otaBegin() {
     // already been sent its OK, so the flash doesn't hold it up).
     powerLatchHoldThroughRestart();
     setLed(false);
-    ledFlashSuccess();  // visible before the reboot
+    if (adapterSetting(AdapterSetting::OtaLed)) ledFlashSuccess();  // visible before the reboot
   });
   ArduinoOTA.onError([](ota_error_t error) {
     Log.println("OTA error [" + String(error) + "]");

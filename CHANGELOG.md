@@ -19,11 +19,21 @@ Builds show their git commit at boot and in `/DIAG`. The keyer link protocol is 
   the whole list, and it's logged at every boot with the reset reason. Failed reconnect attempts, `/DIS` and going
   to the lobby aren't recorded as drops.
 
+- The connecting screen stays up: "Connecting...", "Retrying..." and "VBand Lost / Reconnecting" show the attempt
+  and a clock, refreshed every second (`STU` frames), until VBand joins, connecting stops, or you key over it.
+- LED settings, in their own menu list (VBand > Settings > LED): Keying (`vb.led`), Channel (`vb.ann`, the channel's
+  code flashed on joining), OTA (`vb.otaled`, the update's flicker and flashes) and Status (`vb.status`, the blinks
+  while WiFi is down or VBand is joining).
+- A Channel selector (`vb.chan`, not stored) in VBand > Commands > Rooms: where you are (L for the lobby, 1-5, C), and
+  choosing one goes there, connecting first if need be. Commands now opens Rooms (Who's here first) and Device
+  (Connect or Disconnect first).
+- Who's here off VBand offers Connect (`OF,CON,Connect`): key R in the keyer's menu to connect.
 - Menu groups (link protocol 2: flash the keyer too): each setting and command the keyer lists says which menu
   list it goes in (`SI,<i>,<group>,...`), so the keyer shows VBand > Commands and Settings each with their
   most-used rows on top and the rest under Rooms, Sound, Display and Device. Tone now comes before Pitches.
 
 ### Fixed
+- Who's here while connecting no longer counts as another attempt on the connecting screen.
 - "Room X: N others" is logged when the count or who's there changes: once per join instead of twice, and no longer
   every 30 s. Playback after a drop is unchanged on purpose (what was received keeps playing); the README says so.
 

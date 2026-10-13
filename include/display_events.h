@@ -15,11 +15,20 @@ void displayWifiConnecting();
 void displayWifiPortal();
 void displayWifiConnected(const IPAddress &ip);
 void displayVbandJoined(const String &channel, bool firstJoin, const String &users);
+// Connecting to VBand, or reconnecting after losing it: a screen that
+// stays up, with the attempt and the time so far, until another screen
+// replaces it (joining, going off VBand, ...).
 void displayVbandConnecting();
 void displayVbandLost();
 // A connection attempt failed before VBand was ever ready (on boot or
-// after losing it); says whether WiFi itself is down.
+// after losing it); says whether WiFi itself is down. Another attempt of
+// the same connection.
 void displayVbandUnreachable(bool wifiUp);
+// Shows the connecting screen again as it is (no new attempt); false if
+// there isn't one up.
+bool displayConnectingAgain();
+// Refreshes the connecting screen; call from loop().
+void displayLoop();
 void displayOtaStarting();
 void displayOtaProgress(unsigned int progress, unsigned int total);
 void displayOtaDone();

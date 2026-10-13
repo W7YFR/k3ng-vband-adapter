@@ -17,9 +17,12 @@
 #define MENU_GROUP_ROOMS 'R'
 #define MENU_GROUP_SOUND 'A'
 #define MENU_GROUP_DISPLAY 'D'
+#define MENU_GROUP_LED 'L'
+// A setting in one of the Commands lists instead: the letter in lower case.
+#define MENU_COMMANDS_ROOMS 'r'
 #define MENU_GROUP_DEVICE 'H'
 
-enum class AdapterSetting { Start, Ota, Rx, Join, Volume, Led, Tone, Pitch, Fade, Window, Log, Count };
+enum class AdapterSetting { Start, Ota, Rx, Join, Volume, Led, Announce, OtaLed, Status, Channel, Tone, Pitch, Fade, Window, Log, Count };
 
 // VB.START: what to do at power-on.
 #define VBAND_START_OFF 0    // stay off VBand until /CON (or a channel is chosen)

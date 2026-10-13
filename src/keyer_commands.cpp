@@ -17,17 +17,18 @@ namespace {
 // The commands as menu actions, in the list the keyer asks for ("SL").
 struct Action {
   const char *word;
-  const char *label;
-  char group; // the keyer's menu list it goes in (MENU_GROUP_*)
+  const char *label; // nullptr: not a command but the setting of that key, shown among them
+  char group;        // the keyer's menu list it goes in (MENU_GROUP_*)
 };
-// In menu order; Connect / Disconnect first (only the one that applies is listed).
+// In menu order; only the one of Connect / Disconnect that applies is listed.
 const Action ACTIONS[] = {
-    {"CON", "Connect", MENU_GROUP_NONE},          {"DIS", "Disconnect", MENU_GROUP_NONE},
-    {"WHO", "Who's here", MENU_GROUP_NONE},       {"CH", "Next channel", MENU_GROUP_ROOMS},
-    {"BUSY", "Busiest room", MENU_GROUP_ROOMS},   {"ROOMS", "Room counts", MENU_GROUP_ROOMS},
-    {"LOBBY", "To lobby", MENU_GROUP_ROOMS},      {"OTA", "OTA 10 min", MENU_GROUP_DEVICE},
-    {"AP", "WiFi setup", MENU_GROUP_DEVICE},      {"OFF", "Power off", MENU_GROUP_DEVICE},
-    {"DIAG", "Diagnostics", MENU_GROUP_DEVICE},   {"LAST", "Last drops", MENU_GROUP_DEVICE},
+    {"WHO", "Who's here", MENU_GROUP_ROOMS},      {"CHAN", nullptr, MENU_GROUP_ROOMS},
+    {"CH", "Next channel", MENU_GROUP_ROOMS},     {"BUSY", "Busiest room", MENU_GROUP_ROOMS},
+    {"ROOMS", "Room counts", MENU_GROUP_ROOMS},   {"LOBBY", "To lobby", MENU_GROUP_ROOMS},
+    {"CON", "Connect", MENU_GROUP_DEVICE},        {"DIS", "Disconnect", MENU_GROUP_DEVICE},
+    {"OTA", "OTA 10 min", MENU_GROUP_DEVICE},     {"AP", "WiFi setup", MENU_GROUP_DEVICE},
+    {"OFF", "Power off", MENU_GROUP_DEVICE},      {"DIAG", "Diagnostics", MENU_GROUP_DEVICE},
+    {"LAST", "Last drops", MENU_GROUP_DEVICE},
 };
 constexpr int ACTION_COUNT = sizeof(ACTIONS) / sizeof(ACTIONS[0]);
 
@@ -48,11 +49,19 @@ int listCount = 0;
 int listNext = -1;  // next entry to send, -1 when not listing
 unsigned long lastListFrameMs = 0;
 
+// Settings listed among the commands (a lower-case group) go with them,
+// where ACTIONS places them, not with the settings.
+bool amongCommands(int setting) {
+  return islower(adapterSettingDescription(setting)[0]);
+}
+
 void startList(const String &kind) {
   int settings = adapterSettingsCount();
   listCount = 0;
   if (kind != "a") {
-    for (int i = 0; i < settings; i++) list[listCount++] = i;
+    for (int i = 0; i < settings; i++) {
+      if (!amongCommands(i)) list[listCount++] = i;
+    }
   }
   if (kind != "s") {
     for (int i = 0; i < ACTION_COUNT; i++) {
@@ -68,6 +77,8 @@ void sendListItem(int n) {
   String index = String(n) + ",";
   if (i < settings) {
     megaLinkSend("SI", index + adapterSettingDescription(i));
+  } else if (!ACTIONS[i - settings].label) {
+    megaLinkSend("SI", index + adapterSettingDescription(adapterSettingFind(ACTIONS[i - settings].word)));
   } else {
     const Action &a = ACTIONS[i - settings];
     megaLinkSend("SI", index + a.group + "," + a.word + "," + a.label + ",a");
@@ -95,7 +106,7 @@ bool isChannelCommand(const String &word) {
 // The keyer asks before leaving command mode, so a typo can be retried.
 bool isKnown(const String &word) {
   for (const Action &a : ACTIONS) {
-    if (word == a.word) return true;
+    if (a.label && word == a.word) return true;
   }
   return isChannelCommand(word) || word == "H" || word == "HELP";
 }
@@ -105,6 +116,9 @@ void runCommand(const String &word) {
 
   if (word == "WHO") {
     vbandShowRoom();
+    // Off VBand: offer to connect ("OF,<command>,<label>"); the keyer's menu
+    // runs it if you key R while the answer shows.
+    if (!vbandIsOn()) megaLinkSend("OF", "CON,Connect");
   } else if (word == "CH") {
     vbandCycleChannel();
   } else if (word == "BUSY") {

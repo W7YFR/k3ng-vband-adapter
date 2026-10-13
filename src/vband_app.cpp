@@ -8,6 +8,7 @@
 #include "led_indicator.h"
 #include "sidetone.h"
 #include "mega_link.h"
+#include "display_events.h"
 #include "received_text.h"
 #include "diagnostics.h"
 #include "keyer_commands.h"
@@ -64,6 +65,7 @@ void vbandAppLoop() {
   megaLinkLoop();
   keyerCommandsLoop();
   logForwardLoop();
+  displayLoop();
   diagnosticsStageEnd(DIAG_MEGA);
   diagnosticsStageStart();
   keyerLoop(vbandSendSpaceMark);

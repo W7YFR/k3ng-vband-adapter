@@ -123,8 +123,13 @@ void ledLoop() {
       }
       wasJoined = false;
     } else if (!wasJoined) {
-      wasJoined = true; // rising edge: just (re)joined -- announce it
-      startAnnounce(vbandChannelCode());
+      wasJoined = true; // rising edge: just (re)joined -- announce it, if that's on
+      if (adapterSetting(AdapterSetting::Announce)) {
+        startAnnounce(vbandChannelCode());
+      } else {
+        mode = Mode::Idle;
+        setLed(false);
+      }
     } else if (mode != Mode::Idle) {
       mode = Mode::Idle;
       setLed(false);
@@ -133,10 +138,18 @@ void ledLoop() {
 
   switch (mode) {
     case Mode::WifiDisconnected:
-      updateBlink(LED_WIFI_DISCONNECTED_BLINK_MS);
+      if (adapterSetting(AdapterSetting::Status)) {
+        updateBlink(LED_WIFI_DISCONNECTED_BLINK_MS);
+      } else {
+        setLed(false);
+      }
       break;
     case Mode::AwaitingJoin:
-      updateBlink(LED_WIFI_CONNECTED_BLINK_MS);
+      if (adapterSetting(AdapterSetting::Status)) {
+        updateBlink(LED_WIFI_CONNECTED_BLINK_MS);
+      } else {
+        setLed(false);
+      }
       break;
     case Mode::Announcing:
       updateAnnounce();
