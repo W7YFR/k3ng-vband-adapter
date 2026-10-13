@@ -14,10 +14,23 @@ const unsigned long SHOW_BRIEF_MS = 3000;
 const unsigned long SHOW_UNTIL_REPLACED_MS = 60000;
 const unsigned long SHOW_ROOM_MS = 8000; // longer screens you asked for
 
+// The connecting screen stays up while we're connecting: refreshed every
+// CONNECTING_REFRESH_MS with the attempt and how long it's been, each
+// refresh keeping it up CONNECTING_SCREEN_MS longer. Refreshes go as
+// "STU", which the keyer only shows while the screen is still up, so once
+// you key (or anything else takes the display) they stop coming back.
+const unsigned long CONNECTING_REFRESH_MS = 1000; // the clock counts seconds
+const unsigned long CONNECTING_SCREEN_MS = 10000;
+bool connecting = false;
+unsigned long connectingSinceMs = 0;
+unsigned long connectingSentMs = 0;
+int connectingTry = 1;
+String connectingRows; // the first two rows
+
 // rows: up to four rows separated by '|'. Each is cut to the keyer's
 // width (it would cut them there anyway) and the whole screen to what fits
 // in one frame, so long room or user names can't get it dropped.
-void show(unsigned long ms, const String &rows) {
+void send(const char *type, unsigned long ms, const String &rows) {
   String fields = String(ms) + ",";
   int start = 0;
   while (start <= (int)rows.length()) {
@@ -27,9 +40,37 @@ void show(unsigned long ms, const String &rows) {
     fields += rows.substring(start, min(end, start + KEYER_DISPLAY_COLUMNS));
     start = end + 1;
   }
-  const int maxFields = MEGA_LINK_MAX_FRAME - 8; // "$ST," and "*XX\n"
+  const int maxFields = MEGA_LINK_MAX_FRAME - 6 - strlen(type); // "$<type>," and "*XX\n"
   if ((int)fields.length() > maxFields) fields = fields.substring(0, maxFields);
-  megaLinkSend("ST", fields, true);
+  megaLinkSend(type, fields, true);
+}
+
+// Any other screen ends the connecting screen.
+void show(unsigned long ms, const String &rows) {
+  connecting = false;
+  send("ST", ms, rows);
+}
+
+void sendConnecting(const char *type, unsigned long ms) {
+  unsigned long seconds = (millis() - connectingSinceMs) / 1000;
+  char progress[24];
+  snprintf(progress, sizeof(progress), "Try %d  %lu:%02lu", connectingTry, seconds / 60, seconds % 60);
+  send(type, ms, connectingRows + "|" + progress);
+  connectingSentMs = millis();
+}
+
+// fresh: a new connection (or reconnection) starts, so the count and the
+// clock start again; otherwise another attempt of the same one.
+void showConnecting(const String &rows, bool fresh) {
+  if (fresh || !connecting) {
+    connectingSinceMs = millis();
+    connectingTry = 1;
+  } else {
+    connectingTry++;
+  }
+  connecting = true;
+  connectingRows = rows;
+  sendConnecting("ST", SHOW_UNTIL_REPLACED_MS);
 }
 
 }  // namespace
@@ -57,15 +98,27 @@ void displayVbandJoined(const String &channel, bool firstJoin, const String &use
 }
 
 void displayVbandConnecting() {
-  show(SHOW_UNTIL_REPLACED_MS, "VBand|Connecting...");
+  showConnecting("VBand|Connecting...", true);
 }
 
 void displayVbandUnreachable(bool wifiUp) {
-  show(SHOW_UNTIL_REPLACED_MS, wifiUp ? "VBand Offline|Retrying..." : "WiFi Lost|Retrying...");
+  showConnecting(wifiUp ? "VBand Offline|Retrying..." : "WiFi Lost|Retrying...", false);
 }
 
 void displayVbandLost() {
-  show(SHOW_BRIEF_MS, "VBand Lost|Reconnecting");
+  showConnecting("VBand Lost|Reconnecting", true);
+}
+
+bool displayConnectingAgain() {
+  if (!connecting) return false;
+  sendConnecting("ST", SHOW_UNTIL_REPLACED_MS);
+  return true;
+}
+
+void displayLoop() {
+  if (connecting && millis() - connectingSentMs >= CONNECTING_REFRESH_MS) {
+    sendConnecting("STU", CONNECTING_SCREEN_MS);
+  }
 }
 
 void displayOtaStarting() {

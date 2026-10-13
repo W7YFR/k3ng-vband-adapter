@@ -433,7 +433,7 @@ void vbandShowRoom() {
     return;
   }
   if (!joined) {
-    displayVbandUnreachable(wifiConnected());
+    if (!displayConnectingAgain()) displayVbandUnreachable(wifiConnected()); // not a new attempt
     return;
   }
   displayRoom(joinedChannel, roomUsersKnown() ? roomUsersCount() : -1, roomUsersTags());
@@ -466,6 +466,18 @@ String vbandChannelName() {
 char vbandChannelCode() {
   if (channelIndex == CUSTOM_INDEX) return 'C'; // custom room
   return '1' + channelIndex;
+}
+
+char vbandRoomCode() {
+  return wantRoom ? vbandChannelCode() : 'L';
+}
+
+bool vbandGoToRoom(char code) {
+  if (toupper(code) == 'L') {
+    vbandGoToLobby();
+    return true;
+  }
+  return vbandJoinChannelCode(code);
 }
 
 void vbandSetRxCallback(VbandRxSpaceMarkCallback callback) {

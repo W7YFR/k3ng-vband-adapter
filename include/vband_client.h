@@ -69,6 +69,12 @@ bool vbandIsJoining();
 // for the status LED's Morse announcement: '1'-'5' for the numbered
 // channels, 'C' for the custom room (vbandSettingsRoom()).
 char vbandChannelCode();
+// Where we are or are going, as one of VBAND_ROOM_CODES: 'L' for the
+// lobby (or a plain connect), else vbandChannelCode().
+char vbandRoomCode();
+// Goes there: the lobby ('L'), or a channel as vbandJoinChannelCode(),
+// connecting first if need be. False if there's no such room.
+bool vbandGoToRoom(char code);
 
 // Name of the current CHANNEL_CYCLE position, as the server knows it
 // (e.g. "Channel 5 (ND)" or the custom room).

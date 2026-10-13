@@ -83,8 +83,18 @@
 // duration in each state; MORSE_WPM sets the speed of the one-shot
 // channel-identifier flash played on every join confirmation.
 // While joined, the LED lights with your keying: a setting (VB.LED); this
-// is its default.
+// is its default. The flash of the channel's code on joining is a setting
+// too (VB.ANN), and so are the OTA update's patterns (VB.OTALED) and the
+// status blinks while WiFi is down or VBand is joining (VB.STATUS).
 #define LED_FOLLOWS_KEY_DEFAULT true
+#define LED_ANNOUNCE_JOIN_DEFAULT true
+#define LED_OTA_DEFAULT true
+#define LED_STATUS_DEFAULT true
+
+// The rooms the channel selector (VB.CHAN) offers, in order: the lobby,
+// channels 1-5, the custom room. Its options' names, the same.
+#define VBAND_ROOM_CODES "L12345C"
+#define VBAND_ROOM_CODES_OPTIONS "L|1|2|3|4|5|C"
 #define LED_WIFI_DISCONNECTED_BLINK_MS 500
 #define LED_WIFI_CONNECTED_BLINK_MS 250
 #define MORSE_WPM 10

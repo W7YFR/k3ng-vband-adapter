@@ -45,13 +45,13 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 
 | Command | Does |
 |---|---|
-| `/WHO` | Current channel and who's in it |
+| `/WHO` | Current channel and who's in it; off VBand, the menu offers to connect (key `R`) |
 | `/CH` | Next channel (from the lobby or off VBand: back to your last one) |
 | `/CH1`-`/CH5`, `/CHC` | Jump to a public channel, or `C` for your custom room |
 | `/BUSY` | Join whichever channel (1-5 or your custom room) has the most people in it |
 | `/ROOMS` | How many are in each room |
 | `/LOBBY` | Leave the channel for the lobby |
-| `/CON` / `/DIS` | Connect to VBand (into the lobby) / disconnect; the menu lists whichever applies |
+| `/CON` / `/DIS` | Connect to VBand (into the lobby) / disconnect; the menu lists whichever applies, under Device |
 | `/OTA` | Listen for an OTA update for 10 minutes (shows the IP); `vb.ota` |
 | `/AP` | Restart into the WiFi / VBand settings portal |
 | `/OFF` | Power off (on USB it can't, and says so) |
@@ -70,7 +70,11 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 | `vb.rx` | Text | Others' sending on the display: `Text` with tags, `Sender` (tags only), or `Off` (audio only) |
 | `vb.join` | on | "X joined" / "X left" lines |
 | `vb.vol` | 100% | Received audio level, in 5% steps (the 8-bit DAC gets grainy turned well down; the P3 pot is smoother) |
-| `vb.led` | on | The LED follows your keying while joined |
+| `vb.led` | on | The LED follows your keying while joined (VBand > Settings > LED > "Keying") |
+| `vb.ann` | on | The LED flashes the channel's code in Morse after each join (LED > "Channel") |
+| `vb.otaled` | on | The LED during an OTA update: a flicker while it arrives, a flash when it's done, a long flash if it fails (LED > "OTA") |
+| `vb.status` | on | The LED's status blinks: slow while WiFi is down, faster while connecting or joining (LED > "Status") |
+| `vb.chan` | | Not stored: where you are, `L` (the lobby), `1`-`5` or `C` (your custom room); choosing one goes there, connecting first if need be. In the menu under VBand > Commands > Rooms, as "Channel" |
 | `vb.pitch` | on | A pitch per sender (off: everyone at `vb.tone`) |
 | `vb.tone` | 700 Hz | The first sender's pitch, 300-1200 Hz |
 | `vb.fade` | 5 ms | Sidetone fade in/out, 0-20 ms |
@@ -78,7 +82,7 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 | `vb.log` | off | Forward this log to the keyer's USB port (see Diagnostics). Not saved: off at every power-on |
 
 Three ways to reach them:
-- **Menu:** in command mode, key `/` and pause. Dit (`E`) moves down, dah (`T`) up, `R` opens a group, toggles an on/off setting, runs a command, or starts and saves a change (dit/dah lower and raise the value meanwhile), and `B` or `< Back` go back a level (`B` on the top level closes the menu). `X`, the command button, or `< Exit` leave command mode. The VBand group first offers Commands (the ones below) or Settings; each opens with its most-used rows (Connect or Disconnect, Who's here) above the lists Rooms, Sound, Display and Device, which hold the rest. Running a command shows its answer, then the menu comes back where you were (a paddle touch skips the wait).
+- **Menu:** in command mode, key `/` and pause. Dit (`E`) moves down, dah (`T`) up, `R` opens a group, toggles an on/off setting, runs a command, or starts and saves a change (meanwhile dah raises a number and dit lowers it; in a list of options, dit goes to the next one and dah back, the way rows go), and `B` or `< Back` go back a level (`B` on the top level closes the menu). `X`, the command button, or `< Exit` leave command mode. The VBand group first offers Commands (the ones below) or Settings; each opens the lists that hold them: Commands has Rooms (Who's here first, then a Channel selector) and Device (Connect or Disconnect first); Settings has Rooms, Sound, Display, LED and Device. Running a command shows its answer, then the menu comes back where you were (a paddle touch skips the wait).
 - **Keyed shortcuts:** `/VB LED OFF`, `/KY WPM 22`, `/VB NAME W7YFR`; leave off the value to see the current one, or key just the group (`/VB`) and pause to open its menu.
 - **The keyer's CLI:** `\$` lists everything, `\$ vb` a group, `\$ vb.fade` one setting, `\$ vb.fade 8` sets it (`\$ vb.name Rob W7YFR` keeps your capitals and drops the spaces).
 
@@ -92,6 +96,8 @@ The keyer only offers the settings its build supports (Farnsworth with `FEATURE_
 | both | `HI,<protocol>` | Heartbeat: ESP32 every 1 s until answered, then 2 s. Each side warns on the OLED ("Link Mismatch / Update keyer" or "Update adapter") if the other's protocol version differs |
 | ESP -> keyer | `VB,1` / `VB,0` | VBand usable or not; sent on change and with every heartbeat |
 | ESP -> keyer | `ST,<ms>,<row>\|<row>...` | Status screen, up to 4 rows |
+| ESP -> keyer | `OF,<command>,<label>` | Goes with a command's answer: the keyer's menu offers the command ("R: <label>") and runs it if you key R while the answer shows. `/WHO` off VBand offers `CON` |
+| ESP -> keyer | `STU,<ms>,<row>\|<row>...` | An update to the status screen, shown only while it's still up (nothing else has replaced it). The connecting screen sends one every second with the attempt and the time so far, so it stays up until VBand joins, connecting stops, or you key |
 | ESP -> keyer | `RX,<tag>,<text>` | Decoded text from another station |
 | ESP -> keyer | `SYS,<text>` | A line of its own, e.g. "X joined" |
 | ESP -> keyer | `LG,<text>` / `LGP,<text>` | A line of this log, or part of a longer one (more follows), with `vb.log` on; the keyer prints it on its USB port |
@@ -100,7 +106,7 @@ The keyer only offers the settings its build supports (Farnsworth with `FEATURE_
 | ESP -> keyer | `CR,1` / `CR,0` | Known / unknown |
 | keyer -> ESP | `CMD,<word>` | Run it (sent after leaving command mode) |
 | keyer -> ESP | `SL` / `SL,s` / `SL,a` | List the settings and commands / just the settings / just the commands |
-| ESP -> keyer | `SI,<i>,<group>,<key>,<label>,<type>[,<value>,<min>,<max>,<step>,<unit>]` / `SE,<count>` | One per item (type `b` on/off, `n` number, `e` one of the options named in `<unit>`, separated by bars, `s` text, `a` command), then the end. `<group>` is the keyer menu list it goes in under VBand > Settings or Commands: `R` Rooms, `A` Sound, `D` Display, `H` Device, `-` none (since protocol 2) |
+| ESP -> keyer | `SI,<i>,<group>,<key>,<label>,<type>[,<value>,<min>,<max>,<step>,<unit>]` / `SE,<count>` | One per item (type `b` on/off, `n` number, `e` one of the options named in `<unit>`, separated by bars, `s` text, `a` command), then the end. `<group>` is the keyer menu list it goes in under VBand > Settings or Commands: `R` Rooms, `A` Sound, `D` Display, `L` LED, `H` Device, `-` none (since protocol 2) |
 | keyer -> ESP | `SG,<key>` / `SS,<key>,<value>` | Read / set a setting |
 | ESP -> keyer | `SV,<key>,<value>` | Its value (`?` if there's no such setting) |
 
@@ -121,9 +127,9 @@ The last channel joined is remembered and rejoined after a reboot.
 
 ## Status LED
 
-- Blinking slowly: WiFi not connected. Blinking faster: connecting to VBand or joining a channel.
+- Blinking slowly: WiFi not connected. Blinking faster: connecting to VBand or joining a channel (the `vb.status` setting).
 - Off in the lobby, or when off VBand on purpose.
-- After each join, flashes the channel number (or `C`) in Morse.
+- After each join, flashes the channel number (or `C`) in Morse (the `vb.ann` setting).
 - While joined, lights with your keying (the `vb.led` setting).
 - If the connection drops, the LED starts blinking right away, but what's already been received keeps playing (and
   showing on the keyer) at the sender's speed. After a long, fast message that can run on for a while. That's on
