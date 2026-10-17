@@ -22,7 +22,7 @@
 #define MENU_COMMANDS_ROOMS 'r'
 #define MENU_GROUP_DEVICE 'H'
 
-enum class AdapterSetting { Start, Ota, Rx, Join, Volume, Led, Announce, OtaLed, Status, Channel, Tone, Pitch, Fade, Window, Log, Count };
+enum class AdapterSetting { Start, Ota, Rx, Join, Volume, Led, Announce, OtaLed, Status, Channel, Tone, Pitch, Fade, Window, Log, Ui, Count };
 
 // VB.START: what to do at power-on.
 #define VBAND_START_OFF 0    // stay off VBand until /CON (or a channel is chosen)
@@ -39,6 +39,11 @@ enum class AdapterSetting { Start, Ota, Rx, Join, Volume, Led, Announce, OtaLed,
 #define RX_SHOW_TEXT 0   // decoded text with each sender's tag
 #define RX_SHOW_SENDER 1 // just who's sending (as on no-decode channels)
 #define RX_SHOW_NONE 2   // nothing; audio only
+
+// VB.UI: the transcript's live stream to the keyer's USB port.
+#define TRANSCRIPT_LIVE_OFF 0
+#define TRANSCRIPT_LIVE_ON 1     // until power-off; never saved
+#define TRANSCRIPT_LIVE_ALWAYS 2 // saved: on at every power-on
 
 void adapterSettingsBegin();
 

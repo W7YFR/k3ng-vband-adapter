@@ -6,6 +6,7 @@
 #include "user_tag.h"
 #include "config.h"
 #include "adapter_settings.h"
+#include "transcript.h"
 
 namespace {
 
@@ -29,6 +30,7 @@ bool noDecodeChannel() {
 void sendDecoded(Sender &sender) {
   String text = sender.decoder.take();
   if (!text.length()) return;
+  transcriptText(sender.id, sender.tag, noDecodeChannel() ? String() : text); // whatever VB.RX says
   int show = adapterSetting(AdapterSetting::Rx);
   if (show == RX_SHOW_NONE) return; // audio only
   if (show == RX_SHOW_SENDER || noDecodeChannel()) {

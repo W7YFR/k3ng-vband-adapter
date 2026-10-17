@@ -8,6 +8,12 @@ Builds show their git commit at boot and in `/DIAG`. The keyer link protocol is 
 ## Unreleased
 
 ### Added
+- The VBand transcript: everyone's sending (yours too, decoded from the key line), joins and leaves with the full
+  name, the room's list on joining, room changes, connects and drops, each line starting with the UTC time from NTP
+  (`[14:02Z] W7YFR: CQ CQ`). `vb.ui` (Off / On until power-off / Always, saved) streams it to the keyer's USB port as
+  it's decoded (`TR` / `TRP` frames; `UI` says whether it's on, so the keyer stops echoing your sending there). An
+  interrupted sender's next line repeats their whole message so far. It's also always recorded, one line per finished
+  message in the order they started, the last 32 KB in RAM; `/DIAG` logs how much. See the README's Transcript.
 - Log forwarding (`vb.log`, off at every power-on, never saved): the adapter's log also goes over the link to the
   keyer, which prints it on its USB port, the only one reachable with the adapter in its case. It starts with the
   last 32 lines, so you see what happened before you plugged in. Log frames (`LG` / `LGP`) only go out while nothing

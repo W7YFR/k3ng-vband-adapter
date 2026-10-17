@@ -220,6 +220,22 @@
 #define LOG_LINE_MAX 240
 #define LOG_FORWARD_SPACING_MS 40
 
+// The transcript (transcript.cpp). A sender's message ends after
+// TRANSCRIPT_MESSAGE_GAP_MS without their sending (as the keyer's display
+// starts a new one), or once it's TRANSCRIPT_MESSAGE_MAX characters long.
+// The last TRANSCRIPT_RECORD_BYTES of finished lines are recorded. The live
+// stream (VB.UI) holds up to TRANSCRIPT_OUTBOX_BYTES waiting for the link,
+// and sends a frame at most every TRANSCRIPT_FRAME_SPACING_MS, only while
+// nothing else is waiting to go to the keyer.
+#define TRANSCRIPT_MESSAGE_GAP_MS 5000
+#define TRANSCRIPT_MESSAGE_MAX 2000
+#define TRANSCRIPT_RECORD_BYTES 32768
+#define TRANSCRIPT_OUTBOX_BYTES 4096
+#define TRANSCRIPT_FRAME_SPACING_MS 40
+// Our own sending: a character ends once the key has been up this many
+// dit lengths (the decoder takes over 2 as the gap between characters).
+#define TRANSCRIPT_OWN_CHARACTER_END_DITS 2.5f
+
 // Columns on the keyer's display (its LCD_COLUMNS). Status screens are
 // cut to this width before sending, to keep frames short.
 #define KEYER_DISPLAY_COLUMNS 18

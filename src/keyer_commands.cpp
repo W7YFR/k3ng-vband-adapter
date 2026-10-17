@@ -10,6 +10,7 @@
 #include "adapter_settings.h"
 #include "vband_settings.h"
 #include "user_tag.h"
+#include "transcript.h"
 #include "log.h"
 
 namespace {
@@ -143,6 +144,8 @@ void runCommand(const String &word) {
   } else if (word == "DIAG") {
     displayDiagnostics(diagnosticsSummary());
     diagnosticsLogEvents();
+    Log.printf("DIAG transcript: %u lines, %u bytes recorded\n", (unsigned)transcriptRecordedLines(),
+               (unsigned)transcriptRecordedBytes());
   } else if (word == "LAST") {
     displayDiagnostics(diagnosticsLastEvents());
     diagnosticsLogEvents();
