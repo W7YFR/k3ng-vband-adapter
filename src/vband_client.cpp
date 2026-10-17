@@ -9,6 +9,7 @@
 #include "wifi_setup.h"
 #include "diagnostics.h"
 #include "transcript.h"
+#include "keyer.h"
 #include "log.h"
 
 namespace {
@@ -21,6 +22,10 @@ bool wantRoom = false;         // join channelIndex once connected; false: stay 
 bool quietDisconnect = false;  // dropping the connection on purpose to land in the lobby
 bool joined = false;
 bool ready = false;
+bool loginPending = false;      // the socket is open and CN sent, waiting for COK
+unsigned long socketOpenMs = 0;
+bool listPending = false;       // asked for the channel's user list, no answer yet
+unsigned long listAskedMs = 0;
 String myId;
 String joinedChannel;
 
@@ -74,6 +79,8 @@ String currentChannel() {
 void requestUserList() {
   ws.sendTXT("LU," + joinedChannel);
   lastUserListRequestMs = millis();
+  if (!listPending) listAskedMs = millis(); // timed from the first unanswered ask
+  listPending = true;
 }
 
 void finishJoin() {
@@ -173,6 +180,7 @@ void handleMessage(const String &msg) {
   const String &cmd = fields[0];
 
   if (cmd == "COK" && n >= 2) {
+    loginPending = false;
     myId = fields[1];
     connected = true;
     Log.println("Connected with id " + myId);
@@ -186,6 +194,7 @@ void handleMessage(const String &msg) {
     joinScreenFirst = !ready;
     joinedAtMs = millis();
     roomUsersReset(joinedChannel, myId);
+    listPending = false; // a new channel: a new list to wait for
     transcriptNotice("Joined " + joinedChannel);
     requestUserList();
     Log.println("Joined channel " + fields[1]);
@@ -200,6 +209,7 @@ void handleMessage(const String &msg) {
       customCount = customListing;
       customListing = -1;
     }
+    if (fields[1] == joinedChannel) listPending = false;
     roomUsersListComplete(fields[1]);
     if (joinScreenPending && roomUsersKnown()) finishJoin();
   } else if (cmd == "CLE" && n >= 3) {
@@ -229,12 +239,20 @@ void handleMessage(const String &msg) {
 
 void onWsEvent(WStype_t type, uint8_t *payload, size_t length) {
   switch (type) {
-    case WStype_CONNECTED:
-      Log.println("WS connected");
-      ws.sendTXT("CN," + vbandSettingsName() + ",0,VB 2.0");
+    case WStype_CONNECTED: {
+      bool sent = ws.sendTXT("CN," + vbandSettingsName() + ",0,VB 2.0");
+      Log.printf("WS connected; login as %s %s\n", vbandSettingsName().c_str(), sent ? "sent" : "NOT SENT");
+      loginPending = true;
+      socketOpenMs = millis();
+      break;
+    }
+    case WStype_ERROR:
+      Log.printf("WS error (%u bytes)\n", (unsigned)length);
       break;
     case WStype_DISCONNECTED:
       Log.println("WS disconnected");
+      loginPending = false;
+      listPending = false;
       diagnosticsNoteWsDisconnect(connected && connectionWanted && !quietDisconnect);
       if (connected) {
         if (quietDisconnect) {
@@ -273,12 +291,27 @@ void onWsEvent(WStype_t type, uint8_t *payload, size_t length) {
   }
 }
 
+// The server stopped answering: drop the connection (the library makes a
+// new one).
+void reconnectSilent(const char *why) {
+  Log.printf("VBand %s; reconnecting\n", why);
+  transcriptNotice(String("VBand ") + why + "; reconnecting");
+  loginPending = false;
+  listPending = false;
+  ws.disconnect();
+}
+
 void startConnecting() {
   connectionWanted = true;
   displayVbandConnecting();
   if (!wsStarted) {
     wsStarted = true;
-    ws.begin(VBAND_HOST, VBAND_PORT, VBAND_PATH, VBAND_PROTOCOL);
+    if (adapterSetting(AdapterSetting::Tls)) {
+      Log.println("Connecting encrypted (port " + String(VBAND_TLS_PORT) + ")");
+      ws.beginSSL(VBAND_HOST, VBAND_TLS_PORT, VBAND_PATH, "", VBAND_TLS_PROTOCOL);
+    } else {
+      ws.begin(VBAND_HOST, VBAND_PORT, VBAND_PATH, VBAND_PROTOCOL);
+    }
     ws.onEvent(onWsEvent);
     ws.setReconnectInterval(5000);
   }
@@ -337,13 +370,19 @@ void vbandLoop() {
   if (joined && millis() - lastUserListRequestMs >= ROOM_USERS_POLL_MS) {
     requestUserList();
   }
+  if (loginPending && millis() - socketOpenMs >= VBAND_LOGIN_TIMEOUT_MS) {
+    reconnectSilent("didn't answer the login");
+  } else if (joined && listPending && millis() - listAskedMs >= VBAND_ANSWER_TIMEOUT_MS) {
+    reconnectSilent("didn't answer the user list");
+  }
 }
 
 void vbandSendSpaceMark(unsigned long space, unsigned long mark) {
   if (!joined) return;
   // Every element: on the USB port only, not forwarded (it would crowd out the log history).
   Serial.println("TX space=" + String(space) + " mark=" + String(mark));
-  ws.sendTXT("SM," + String(space) + "," + String(mark));
+  bool sent = ws.sendTXT("SM," + String(space) + "," + String(mark));
+  diagnosticsNoteSmSent(millis() - keyerLastReleaseMs(), sent);
 }
 
 void vbandCycleChannel() {
@@ -376,6 +415,8 @@ void vbandConnect() {
 void vbandDisconnect() {
   if (!connectionWanted) return;
   Log.println("Disconnecting from VBand");
+  loginPending = false;
+  listPending = false;
   if (connected) transcriptNotice("Disconnected from VBand");
   connectionWanted = false;
   ws.disconnect();

@@ -22,7 +22,7 @@
 #define MENU_COMMANDS_ROOMS 'r'
 #define MENU_GROUP_DEVICE 'H'
 
-enum class AdapterSetting { Start, Ota, Rx, Join, Volume, Led, Announce, OtaLed, Status, Channel, Tone, Pitch, Fade, Window, Log, Ui, Count };
+enum class AdapterSetting { Start, Ota, Rx, Join, Volume, Led, Announce, OtaLed, Status, Channel, Tone, Pitch, Fade, Window, Log, Ui, Tls, Count };
 
 // VB.START: what to do at power-on.
 #define VBAND_START_OFF 0    // stay off VBand until /CON (or a channel is chosen)

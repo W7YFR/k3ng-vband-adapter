@@ -77,6 +77,10 @@ bool keyerKeyDown() {
   return lineActive();
 }
 
+unsigned long keyerLastReleaseMs() {
+  return releaseMs;
+}
+
 unsigned long keyerIdleMs() {
   if (keyDown || markPending || edgeTail != edgeHead) return 0;
   return millis() - releaseMs;

@@ -18,3 +18,7 @@ bool keyerKeyDown();
 // How long the key has been up since the last mark reported, in ms; 0
 // while it's down or an edge is still to be processed.
 unsigned long keyerIdleMs();
+
+// When the last mark reported ended (millis()), for measuring how late
+// it's passed on.
+unsigned long keyerLastReleaseMs();

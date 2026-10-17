@@ -40,6 +40,19 @@
 #define VBAND_PORT 7385
 #define VBAND_PATH "/"
 #define VBAND_PROTOCOL "lws-hrs-vband2"
+// The encrypted port the website uses (VB.TLS, on by default; no
+// certificate check). The plaintext port has proved unreliable: connections
+// that stall, logins that go unanswered.
+#define VBAND_TLS_DEFAULT 1
+#define VBAND_TLS_PORT 7386
+#define VBAND_TLS_PROTOCOL "lws-hrs-vband2-ssl"
+
+// A connection the server stops answering is dropped and made again: no
+// answer to our login (CN -> COK) within VBAND_LOGIN_TIMEOUT_MS, or, while
+// in a channel, none to the user list we ask for (LU -> ULC, every
+// ROOM_USERS_POLL_MS at least) within VBAND_ANSWER_TIMEOUT_MS.
+#define VBAND_LOGIN_TIMEOUT_MS 10000
+#define VBAND_ANSWER_TIMEOUT_MS 15000
 
 // Defaults for the user name and custom room, both editable in the WiFi
 // config portal and persisted in NVS (see vband_settings.cpp). The name

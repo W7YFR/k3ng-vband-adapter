@@ -8,6 +8,13 @@ Builds show their git commit at boot and in `/DIAG`. The keyer link protocol is 
 ## Unreleased
 
 ### Added
+- `vb.tls` (Device > Encrypted, on by default): connect on VBand's encrypted port (7386), as the website does. On the
+  plaintext port (7385) connections kept stalling: logins went unanswered for minutes, sends to the server blocked for
+  seconds, and the connection dropped every minute or two. Takes effect at the next power-on.
+- A connection the server stops answering is dropped and made again: no answer to the login within 10 s, or, in a
+  channel, none to the user list within 15 s. The login's send and library errors are logged.
+- The DIAG line shows how our own elements go out: how many, the latest one handed to the network after the key came
+  up (`txlate`), and failed sends (`txfail`).
 - The VBand transcript: everyone's sending (yours too, decoded from the key line), joins and leaves with the full
   name, the room's list on joining, room changes, connects and drops, each line starting with the UTC time from NTP
   (`[14:02Z] W7YFR: CQ CQ`). `vb.ui` (Off / On until power-off / Always, saved) streams it to the keyer's USB port as

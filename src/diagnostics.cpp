@@ -20,6 +20,9 @@ unsigned long lastServerMessageMs = 0;
 unsigned long serverGapMaxMs = 0;
 unsigned long lastSmkMs = 0;
 unsigned long smkGapMaxMs = 0;
+unsigned long smTxCount = 0;    // our elements sent, this interval
+unsigned long smTxLateMaxMs = 0;
+unsigned long smTxFails = 0;    // since boot
 unsigned long smkCount = 0;
 int queueDepth = 0;
 int queueDepthMax = 0;
@@ -194,6 +197,12 @@ void diagnosticsNoteServerMessage() {
   lastServerMessageMs = now;
 }
 
+void diagnosticsNoteSmSent(unsigned long lateMs, bool sent) {
+  smTxCount++;
+  if (lateMs > smTxLateMaxMs) smTxLateMaxMs = lateMs;
+  if (!sent) smTxFails++;
+}
+
 void diagnosticsNoteSmk() {
   unsigned long now = millis();
   // Gaps over 5s are the sender pausing, not the network.
@@ -286,16 +295,18 @@ void diagnosticsLoop() {
   }
   Log.printf("DIAG t=%lus rssi=%d heap=%u minheap=%u loopmax=%lums [max ms:%s] "
                 "smk=%lu smkgap=%lums srvgap=%lums queue=%d qmax=%d drops=%lu tone=%lums "
-                "wsdrops=%lu wifidrops=%lu\n",
+                "wsdrops=%lu wifidrops=%lu tx=%lu txlate=%lums txfail=%lu\n",
                 millis() / 1000, WiFi.RSSI(), ESP.getFreeHeap(), ESP.getMinFreeHeap(),
                 loopMaxUs / 1000, stages.c_str(), smkCount, smkGapMaxMs, serverGapMaxMs,
-                queueDepth, queueDepthMax, queueDrops, toneMs, wsDisconnects, wifiDisconnects);
+                queueDepth, queueDepthMax, queueDrops, toneMs, wsDisconnects, wifiDisconnects, smTxCount, smTxLateMaxMs, smTxFails);
 
   // Per-interval values start over; totals (drops, disconnects) keep counting.
   for (unsigned long &us : stageMaxUs) us = 0;
   loopMaxUs = 0;
   smkCount = 0;
   smkGapMaxMs = 0;
+  smTxCount = 0;
+  smTxLateMaxMs = 0;
   serverGapMaxMs = 0;
   queueDepthMax = queueDepth;
   toneMs = 0;
