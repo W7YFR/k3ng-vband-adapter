@@ -35,6 +35,9 @@ void diagnosticsStageEnd(DiagStage stage);
 
 void diagnosticsNoteServerMessage(); // anything received from VBand
 void diagnosticsNoteSmk();           // someone else's keying
+// One of our elements handed to the WebSocket: how long after the key
+// came up, and whether the send went through.
+void diagnosticsNoteSmSent(unsigned long lateMs, bool sent);
 void diagnosticsNoteQueueDepth(int depth);
 void diagnosticsNoteQueueDrop();
 void diagnosticsNoteToneMs(unsigned long ms);

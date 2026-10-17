@@ -80,6 +80,7 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 | `vb.fade` | 5 ms | Sidetone fade in/out, 0-20 ms |
 | `vb.win` | 10 s | Channel button: how soon a second press switches channel, 3-30 s |
 | `vb.log` | off | Forward this log to the keyer's USB port (see Diagnostics). Not saved: off at every power-on |
+| `vb.tls` | on | Connect to VBand on its encrypted port (7386, as the website does) rather than the plaintext one (7385), which has stalled and dropped connections. Takes effect at the next power-on. In the menu under Device, as "Encrypted" |
 | `vb.ui` | Off | The VBand transcript on the keyer's USB port (see Transcript): `Off`, `On` (until power-off) or `Always` (saved). In the menu under Display, as "Transcript" |
 
 Three ways to reach them:
@@ -112,6 +113,13 @@ The keyer only offers the settings its build supports (Farnsworth with `FEATURE_
 | ESP -> keyer | `SI,<i>,<group>,<key>,<label>,<type>[,<value>,<min>,<max>,<step>,<unit>]` / `SE,<count>` | One per item (type `b` on/off, `n` number, `e` one of the options named in `<unit>`, separated by bars, `s` text, `a` command), then the end. `<group>` is the keyer menu list it goes in under VBand > Settings or Commands: `R` Rooms, `A` Sound, `D` Display, `L` LED, `H` Device, `-` none (since protocol 2) |
 | keyer -> ESP | `SG,<key>` / `SS,<key>,<value>` | Read / set a setting |
 | ESP -> keyer | `SV,<key>,<value>` | Its value (`?` if there's no such setting) |
+
+## Connection health
+
+The adapter connects on VBand's encrypted port by default (`vb.tls`). A connection the server stops answering is
+dropped and made again rather than left hanging: no answer to the login within 10 s, or, in a channel, no answer to
+the user list it asks for every 30 s within 15 s. Each such reconnect is logged and noted in the transcript
+(`* VBand didn't answer ...; reconnecting`).
 
 ## Transcript
 
@@ -255,7 +263,7 @@ OTA listens per the `vb.ota` setting: `On` (the default, `OTA_MODE_DEFAULT` in `
 
 ## Diagnostics
 
-With `DIAGNOSTICS_LOG` defined (the default), the USB serial port gets a `DIAG` line every 5 s -- WiFi signal, free heap, the slowest pass through each part of `loop()`, how other users' keying is arriving (count, longest gap between elements and between any server messages), how far playback is behind, dropped elements, disconnects -- plus a line for each WiFi or VBand drop with its reason. Nothing reads it without a serial monitor, so it costs next to nothing otherwise. To capture a log:
+With `DIAGNOSTICS_LOG` defined (the default), the USB serial port gets a `DIAG` line every 5 s -- WiFi signal, free heap, the slowest pass through each part of `loop()`, how other users' keying is arriving (count, longest gap between elements and between any server messages), how far playback is behind, dropped elements, disconnects, and how our own elements go out (`tx` sent, `txlate` the latest one handed to the network after the key came up, `txfail` sends that failed) -- plus a line for each WiFi or VBand drop with its reason. Nothing reads it without a serial monitor, so it costs next to nothing otherwise. To capture a log:
 
 ```bash
 pio device monitor -e wemos_d1_mini32 | tee diag-log.txt   # -e: the default env is OTA
