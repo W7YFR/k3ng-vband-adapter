@@ -14,12 +14,19 @@
 #include "keyer_commands.h"
 #include "config.h"
 #include "adapter_settings.h"
+#include "transcript.h"
 #include "log.h"
 
 namespace {
 
 void onVbandRx(const String &userId, const String &userName, unsigned long space, unsigned long mark) {
   sidetoneQueueSpaceMark(space, mark, receivedTextSender(userId, userName));
+}
+
+// Our own keying goes to VBand, and into the transcript with it.
+void onOwnSpaceMark(unsigned long space, unsigned long mark) {
+  if (vbandIsJoined()) transcriptOwnSpaceMark(space, mark);
+  vbandSendSpaceMark(space, mark);
 }
 
 // A press after a quiet spell shows where you are; pressing again within
@@ -52,6 +59,7 @@ void vbandAppBegin() {
   diagnosticsBegin();
 
   wifiConnect();
+  transcriptBegin();
   vbandBegin();
   otaBegin();
 }
@@ -64,11 +72,12 @@ void vbandAppLoop() {
   megaLinkSetVbandReady(vbandIsReady());
   megaLinkLoop();
   keyerCommandsLoop();
+  transcriptLoop(); // ahead of the log, which only takes what's left
   logForwardLoop();
   displayLoop();
   diagnosticsStageEnd(DIAG_MEGA);
   diagnosticsStageStart();
-  keyerLoop(vbandSendSpaceMark);
+  keyerLoop(onOwnSpaceMark);
   diagnosticsStageEnd(DIAG_KEYER);
   diagnosticsStageStart();
   sidetoneLoop();

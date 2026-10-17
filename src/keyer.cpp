@@ -77,6 +77,11 @@ bool keyerKeyDown() {
   return lineActive();
 }
 
+unsigned long keyerIdleMs() {
+  if (keyDown || markPending || edgeTail != edgeHead) return 0;
+  return millis() - releaseMs;
+}
+
 void keyerLoop(KeyerSpaceMarkCallback onSpaceMark) {
   while (edgeTail != edgeHead) {
     KeyEdge edge = {edges[edgeTail].atUs, edges[edgeTail].down};

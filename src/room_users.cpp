@@ -3,6 +3,7 @@
 #include "room_users.h"
 #include "user_tag.h"
 #include "display_events.h"
+#include "transcript.h"
 #include "log.h"
 
 namespace {
@@ -10,6 +11,7 @@ namespace {
 struct User {
   String id;
   String tag;
+  String name; // in full, for the transcript
 };
 
 String channel;
@@ -45,7 +47,7 @@ void roomUsersListBegin(const String &listChannel) {
 
 void roomUsersListAdd(const String &listChannel, const String &userId, const String &userName) {
   if (!listing || listChannel != channel || userId == me || contains(pending, userId)) return;
-  pending.push_back({userId, userTag(userName)});
+  pending.push_back({userId, userTag(userName), userName});
 }
 
 void roomUsersListComplete(const String &listChannel) {
@@ -56,12 +58,21 @@ void roomUsersListComplete(const String &listChannel) {
   for (const User &user : pending) {
     if (contains(users, user.id)) continue;
     changed = true;
-    if (known) displayUserJoined(user.tag);
+    if (!known) continue;
+    displayUserJoined(user.tag);
+    transcriptNotice(user.tag + " joined (" + user.name + ")");
   }
   for (const User &user : users) {
     if (contains(pending, user.id)) continue;
     changed = true;
-    if (known) displayUserLeft(user.tag);
+    if (!known) continue;
+    displayUserLeft(user.tag);
+    transcriptNotice(user.tag + " left");
+  }
+  if (!known) { // the room as we found it
+    String here;
+    for (const User &user : pending) here += (here.length() ? ", " : "") + user.tag + " (" + user.name + ")";
+    transcriptNotice(pending.empty() ? String("Nobody else here") : String(pending.size()) + " here: " + here);
   }
   if (changed) Log.printf("Room %s: %u others\n", channel.c_str(), (unsigned)pending.size());
   users = pending;

@@ -38,6 +38,7 @@ const Definition DEFINITIONS[] = {
     {"FADE", "Fade", MENU_GROUP_SOUND, 'n', 0, AUDIO_RAMP_MAX_MS, 1, "ms", AUDIO_RAMP_MS},
     {"WIN", "Switch win", MENU_GROUP_ROOMS, 'n', 3, 30, 1, "s", CHANNEL_SWITCH_WINDOW_S},
     {"LOG", "Log to USB", MENU_GROUP_DEVICE, 'b', 0, 1, 1, "", 0}, // never saved: off at power-on
+    {"UI", "Transcript", MENU_GROUP_DISPLAY, 'e', 0, 2, 1, "Off|On|Always", TRANSCRIPT_LIVE_OFF},
 };
 constexpr int NUMBERS = (int)AdapterSetting::Count;
 static_assert(sizeof(DEFINITIONS) / sizeof(DEFINITIONS[0]) == NUMBERS, "one definition per AdapterSetting");
@@ -102,6 +103,7 @@ void adapterSettingsBegin() {
   prefs.end();
   if (values[(int)AdapterSetting::Ota] == OTA_MODE_WINDOW) values[(int)AdapterSetting::Ota] = OTA_MODE_OFF;
   values[(int)AdapterSetting::Log] = 0;
+  if (values[(int)AdapterSetting::Ui] == TRANSCRIPT_LIVE_ON) values[(int)AdapterSetting::Ui] = TRANSCRIPT_LIVE_OFF;
   values[(int)AdapterSetting::Channel] = 0; // never stored: see valueOf()
 }
 
@@ -164,8 +166,11 @@ int adapterSettingSet(const String &key, const String &value) {
   if (n != (int)AdapterSetting::Log) { // log forwarding is for now; after a reboot it's off
     Preferences prefs;
     prefs.begin(NVS_NAMESPACE, false);
-    // An OTA window is for now; after a reboot it's off.
-    prefs.putInt(DEFINITIONS[n].key, (n == (int)AdapterSetting::Ota && number == OTA_MODE_WINDOW) ? OTA_MODE_OFF : number);
+    // An OTA window, and the transcript On (not Always), are for now; after a reboot they're off.
+    int saved = number;
+    if (n == (int)AdapterSetting::Ota && number == OTA_MODE_WINDOW) saved = OTA_MODE_OFF;
+    if (n == (int)AdapterSetting::Ui && number == TRANSCRIPT_LIVE_ON) saved = TRANSCRIPT_LIVE_OFF;
+    prefs.putInt(DEFINITIONS[n].key, saved);
     prefs.end();
   }
   apply(n);

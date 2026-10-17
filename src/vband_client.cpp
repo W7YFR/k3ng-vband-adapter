@@ -8,6 +8,7 @@
 #include "room_users.h"
 #include "wifi_setup.h"
 #include "diagnostics.h"
+#include "transcript.h"
 #include "log.h"
 
 namespace {
@@ -175,6 +176,7 @@ void handleMessage(const String &msg) {
     myId = fields[1];
     connected = true;
     Log.println("Connected with id " + myId);
+    transcriptNotice(wantRoom ? "Connected to VBand" : "Connected to VBand, in the lobby");
     askCounts(CountsFor::Splash); // the join (if any) follows the splash
   } else if (cmd == "CJN" && n >= 2) {
     joined = true;
@@ -184,6 +186,7 @@ void handleMessage(const String &msg) {
     joinScreenFirst = !ready;
     joinedAtMs = millis();
     roomUsersReset(joinedChannel, myId);
+    transcriptNotice("Joined " + joinedChannel);
     requestUserList();
     Log.println("Joined channel " + fields[1]);
   } else if (cmd == "ULB" && n >= 2) {
@@ -233,6 +236,13 @@ void onWsEvent(WStype_t type, uint8_t *payload, size_t length) {
     case WStype_DISCONNECTED:
       Log.println("WS disconnected");
       diagnosticsNoteWsDisconnect(connected && connectionWanted && !quietDisconnect);
+      if (connected) {
+        if (quietDisconnect) {
+          transcriptNotice("Left " + (joined ? joinedChannel : String("the channel")) + " for the lobby");
+        } else if (connectionWanted) {
+          transcriptNotice("Lost the VBand connection");
+        }
+      }
       // Fires again on every failed reconnect attempt, roughly every 5s.
       if (quietDisconnect) {
         quietDisconnect = false;
@@ -366,6 +376,7 @@ void vbandConnect() {
 void vbandDisconnect() {
   if (!connectionWanted) return;
   Log.println("Disconnecting from VBand");
+  if (connected) transcriptNotice("Disconnected from VBand");
   connectionWanted = false;
   ws.disconnect();
   connected = false;

@@ -80,6 +80,7 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 | `vb.fade` | 5 ms | Sidetone fade in/out, 0-20 ms |
 | `vb.win` | 10 s | Channel button: how soon a second press switches channel, 3-30 s |
 | `vb.log` | off | Forward this log to the keyer's USB port (see Diagnostics). Not saved: off at every power-on |
+| `vb.ui` | Off | The VBand transcript on the keyer's USB port (see Transcript): `Off`, `On` (until power-off) or `Always` (saved). In the menu under Display, as "Transcript" |
 
 Three ways to reach them:
 - **Menu:** in command mode, key `/` and pause. Dit (`E`) moves down, dah (`T`) up, `R` opens a group, toggles an on/off setting, runs a command, or starts and saves a change (meanwhile dah raises a number and dit lowers it; in a list of options, dit goes to the next one and dah back, the way rows go), and `B` or `< Back` go back a level (`B` on the top level closes the menu). `X`, the command button, or `< Exit` leave command mode. The VBand group first offers Commands (the ones below) or Settings; each opens the lists that hold them: Commands has Rooms (Who's here first, then a Channel selector) and Device (Connect or Disconnect first); Settings has Rooms, Sound, Display, LED and Device. Running a command shows its answer, then the menu comes back where you were (a paddle touch skips the wait).
@@ -101,6 +102,8 @@ The keyer only offers the settings its build supports (Farnsworth with `FEATURE_
 | ESP -> keyer | `RX,<tag>,<text>` | Decoded text from another station |
 | ESP -> keyer | `SYS,<text>` | A line of its own, e.g. "X joined" |
 | ESP -> keyer | `LG,<text>` / `LGP,<text>` | A line of this log, or part of a longer one (more follows), with `vb.log` on; the keyer prints it on its USB port |
+| ESP -> keyer | `TR,<text>` / `TRP,<text>` | The transcript, with `vb.ui` on: text that ends the current line, or that goes on it (more follows); the keyer prints it on its USB port |
+| ESP -> keyer | `UI,1` / `UI,0` | The transcript is streaming or not; on change and every 2 s. While it is, and VBand is on, the keyer doesn't echo your sending to its USB port, since the transcript has it |
 | ESP -> keyer | `BYE,<reason>` | About to reboot or power off (`OTA`, `OFF`, `AP`) |
 | keyer -> ESP | `CK,<word>` | Is this a command? |
 | ESP -> keyer | `CR,1` / `CR,0` | Known / unknown |
@@ -109,6 +112,32 @@ The keyer only offers the settings its build supports (Farnsworth with `FEATURE_
 | ESP -> keyer | `SI,<i>,<group>,<key>,<label>,<type>[,<value>,<min>,<max>,<step>,<unit>]` / `SE,<count>` | One per item (type `b` on/off, `n` number, `e` one of the options named in `<unit>`, separated by bars, `s` text, `a` command), then the end. `<group>` is the keyer menu list it goes in under VBand > Settings or Commands: `R` Rooms, `A` Sound, `D` Display, `L` LED, `H` Device, `-` none (since protocol 2) |
 | keyer -> ESP | `SG,<key>` / `SS,<key>,<value>` | Read / set a setting |
 | ESP -> keyer | `SV,<key>,<value>` | Its value (`?` if there's no such setting) |
+
+## Transcript
+
+The adapter keeps the VBand session as a transcript: everyone's sending (yours too, decoded from the key line), joins
+and leaves, room changes and connects and drops, each line starting with the UTC time from NTP (`[--:--Z]` until it
+has answered):
+
+```
+[14:02Z] * Joined Channel 2
+[14:02Z] * 2 here: K1ABC (Bob K1ABC), N0XYZ (Ann N0XYZ)
+[14:02Z] W7YFR: CQ CQ DE W7Y
+[14:02Z] K1ABC: QRL?
+[14:02Z] W7YFR: CQ CQ DE W7YFR W7YFR K
+[14:03Z] * N0XYZ left
+```
+
+A message is one person's sending until they've been quiet for 5 s, as on the keyer's display. On no-decode channels
+a line shows who's sending, without the text. The transcript doesn't depend on `vb.rx` or `vb.join`.
+
+- **Live:** with `vb.ui` on, the keyer prints it on its USB port as it's decoded (in CLI mode only, as the log), and
+  stops echoing your sending there, which the transcript carries. When someone who was interrupted goes on, their
+  new line repeats their whole message so far, so each line reads whole (as above). If the link can't keep up, a
+  line says some was lost.
+- **Recorded:** always, whatever `vb.ui` says: each finished message as one line, in the order the messages started,
+  without the repeats; the last 32 KB (about 300 messages), in RAM, so lost at power-off. `/DIAG` logs how much it
+  holds. Exporting it is still to come.
 
 ## Versions
 

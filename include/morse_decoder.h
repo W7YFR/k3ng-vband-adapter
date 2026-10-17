@@ -18,6 +18,14 @@ class MorseDecoder {
   // Call every loop().
   void flushIfIdle();
 
+  // Completes the character now: for keying timed right here, once the key
+  // is known to have been up long enough (flushIfIdle() can't tell, since
+  // a mark only arrives once it's over).
+  void endCharacter() { flush(); }
+
+  // The sender's dit length as learned so far, in ms.
+  float ditLength() const { return ditLength_; }
+
   // Text decoded since the last call: letters, digits, punctuation, ' '
   // between words, '*' for anything unrecognized, and prosigns as their
   // two letters (e.g. "SK", "BT").
