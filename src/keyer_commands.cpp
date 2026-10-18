@@ -11,6 +11,7 @@
 #include "vband_settings.h"
 #include "user_tag.h"
 #include "transcript.h"
+#include "config.h"
 #include "log.h"
 
 namespace {
@@ -23,6 +24,7 @@ struct Action {
 };
 // In menu order; only the one of Connect / Disconnect that applies is listed.
 const Action ACTIONS[] = {
+    {"SEND", nullptr, MENU_GROUP_NONE},
     {"WHO", "Who's here", MENU_GROUP_ROOMS},      {"CHAN", nullptr, MENU_GROUP_ROOMS},
     {"CH", "Next channel", MENU_GROUP_ROOMS},     {"BUSY", "Busiest room", MENU_GROUP_ROOMS},
     {"ROOMS", "Room counts", MENU_GROUP_ROOMS},   {"LOBBY", "To lobby", MENU_GROUP_ROOMS},
@@ -45,7 +47,7 @@ bool actionListed(const Action &a) {
 // the commands (the keyer only holds one half at a time); "SL" both. Items
 // are numbered from 0 in what's sent.
 constexpr unsigned long LIST_FRAME_SPACING_MS = 20;
-int list[32];       // what's being listed: settings 0.., then commands (settings count + action index)
+int list[48];       // what's being listed: settings 0.., then commands (settings count + action index)
 int listCount = 0;
 int listNext = -1;  // next entry to send, -1 when not listing
 unsigned long lastListFrameMs = 0;
@@ -193,6 +195,17 @@ void keyerCommandsLoop() {
   bool linkUp = megaLinkUp();
   String tag = userTag(vbandSettingsName());
   if (linkUp && (!linkWasUp || tag != lastTagSent) && megaLinkSend("MY", tag)) lastTagSent = tag;
+  // "SN,1" / "SN,0": whether our keying goes to VBand (VB.SEND), so the
+  // keyer only tags our sending with our name while it does. On change and
+  // every couple of seconds.
+  static int sendingSent = -1;
+  static unsigned long sendingSentMs = 0;
+  int sending = vbandSending() ? 1 : 0;
+  if (linkUp && (sending != sendingSent || !linkWasUp || millis() - sendingSentMs >= MEGA_LINK_HI_UP_MS) &&
+      megaLinkSend("SN", String(sending))) {
+    sendingSent = sending;
+    sendingSentMs = millis();
+  }
   linkWasUp = linkUp;
 
   if (listNext < 0 || millis() - lastListFrameMs < LIST_FRAME_SPACING_MS) return;

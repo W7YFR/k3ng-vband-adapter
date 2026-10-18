@@ -8,6 +8,10 @@ Builds show their git commit at boot and in `/DIAG`. The keyer link protocol is 
 ## Unreleased
 
 ### Added
+- Sending (`vb.send`, first in VBand > Commands): turn it off to practice on the keyer while staying in a room and
+  hearing it. Your keying isn't sent to VBand or put in the transcript, the LED stops following it, and the keyer
+  (told with `SN` frames) shows it without your name and echoes it to its CLI again. Not stored: it stays as set
+  across rooms and is on again at power-on.
 - `vb.phy` (Device > WiFi mode): limit the WiFi to older, sturdier generations, `b/g` (no 802.11n) or `b` only, for a
   busy 2.4 GHz channel where packets are often resent and elements reach VBand late. If the router won't take the
   mode, the adapter falls back to b/g/n after 15 s rather than open the setup portal. The WiFi line in the log now

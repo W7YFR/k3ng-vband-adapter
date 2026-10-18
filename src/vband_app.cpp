@@ -25,7 +25,7 @@ void onVbandRx(const String &userId, const String &userName, unsigned long space
 
 // Our own keying goes to VBand, and into the transcript with it.
 void onOwnSpaceMark(unsigned long space, unsigned long mark) {
-  if (vbandIsJoined()) transcriptOwnSpaceMark(space, mark);
+  if (vbandIsJoined() && vbandSending()) transcriptOwnSpaceMark(space, mark); // practice isn't in the transcript
   vbandSendSpaceMark(space, mark);
 }
 

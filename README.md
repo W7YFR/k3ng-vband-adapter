@@ -63,6 +63,7 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 
 | Setting | Default | |
 |---|---|---|
+| `vb.send` | on | Not stored: whether your keying goes to VBand. Off keeps it here for practice while you stay in the room and still hear it; the LED stops following your keying and the keyer shows your practice without your name. Stays as set across rooms; on again at power-on. First in VBand > Commands, as "Sending" |
 | `vb.name` | set in the portal | Your VBand name (spaces removed), what others see; your own tag comes from it |
 | `vb.room` | set in the portal | Your custom room (spaces removed); rejoined if you're in it |
 | `vb.start` | Last | On power-on: `Off` (connect with `/CON` or a channel), `Lobby`, `Last` channel, or your `Custom` room |
@@ -105,7 +106,8 @@ The keyer only offers the settings its build supports (Farnsworth with `FEATURE_
 | ESP -> keyer | `SYS,<text>` | A line of its own, e.g. "X joined" |
 | ESP -> keyer | `LG,<text>` / `LGP,<text>` | A line of this log, or part of a longer one (more follows), with `vb.log` on; the keyer prints it on its USB port |
 | ESP -> keyer | `TR,<text>` / `TRP,<text>` | The transcript, with `vb.ui` on: text that ends the current line, or that goes on it (more follows); the keyer prints it on its USB port |
-| ESP -> keyer | `UI,1` / `UI,0` | The transcript is streaming or not; on change and every 2 s. While it is, and VBand is on, the keyer doesn't echo your sending to its USB port, since the transcript has it |
+| ESP -> keyer | `UI,1` / `UI,0` | The transcript is streaming your sending or not (it's on, and `vb.send` is on); on change and every 2 s. While it is, and VBand is on, the keyer doesn't echo your sending to its USB port, since the transcript has it |
+| ESP -> keyer | `SN,1` / `SN,0` | Your keying goes to VBand or stays here (`vb.send`); on change and every 2 s. The keyer tags your sending with your name only while it goes to VBand |
 | ESP -> keyer | `BYE,<reason>` | About to reboot or power off (`OTA`, `OFF`, `AP`) |
 | keyer -> ESP | `CK,<word>` | Is this a command? |
 | ESP -> keyer | `CR,1` / `CR,0` | Known / unknown |

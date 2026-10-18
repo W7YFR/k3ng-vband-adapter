@@ -16,9 +16,10 @@
 // - Recorded, always: each finished message as one line, in the order the
 //   messages started, the last TRANSCRIPT_RECORD_BYTES of them, in RAM.
 //
-// "UI,1" / "UI,0" tell the keyer whether the live stream is on (on change
-// and every couple of seconds), so it can stop echoing our own sending to
-// its USB port while the transcript carries it.
+// "UI,1" / "UI,0" tell the keyer whether the live stream is carrying our
+// own sending (it's on, and VB.SEND is on), on change and every couple of
+// seconds, so the keyer stops echoing our sending to its USB port only
+// while the transcript has it.
 
 // Starts NTP; call once WiFi has been set up.
 void transcriptBegin();

@@ -8,6 +8,7 @@
 #include "vband_settings.h"
 #include "user_tag.h"
 #include "keyer.h"
+#include "vband_client.h"
 #include "config.h"
 
 namespace {
@@ -196,7 +197,7 @@ void transcriptLoop() {
     outboxLost = false;
     lineOpen = false;
   }
-  sendState(live);
+  sendState(live && vbandSending()); // "the transcript has our sending": not while it stays here
 
   // Our keying is timed right here: a character is over once the key has
   // been up longer than the gap inside one (2 dits), so it shows then
