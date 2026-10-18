@@ -40,6 +40,7 @@ const Definition DEFINITIONS[] = {
     {"LOG", "Log to USB", MENU_GROUP_DEVICE, 'b', 0, 1, 1, "", 0}, // never saved: off at power-on
     {"UI", "Transcript", MENU_GROUP_DISPLAY, 'e', 0, 2, 1, "Off|On|Always", TRANSCRIPT_LIVE_OFF},
     {"TLS", "Encrypted", MENU_GROUP_DEVICE, 'b', 0, 1, 1, "", VBAND_TLS_DEFAULT}, // takes effect at the next power-on
+    {"PHY", "WiFi mode", MENU_GROUP_DEVICE, 'e', 0, 2, 1, "b/g/n|b/g|b", WIFI_PHY_BGN}, // takes effect at the next power-on
 };
 constexpr int NUMBERS = (int)AdapterSetting::Count;
 static_assert(sizeof(DEFINITIONS) / sizeof(DEFINITIONS[0]) == NUMBERS, "one definition per AdapterSetting");

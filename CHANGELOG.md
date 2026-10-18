@@ -8,6 +8,10 @@ Builds show their git commit at boot and in `/DIAG`. The keyer link protocol is 
 ## Unreleased
 
 ### Added
+- `vb.phy` (Device > WiFi mode): limit the WiFi to older, sturdier generations, `b/g` (no 802.11n) or `b` only, for a
+  busy 2.4 GHz channel where packets are often resent and elements reach VBand late. If the router won't take the
+  mode, the adapter falls back to b/g/n after 15 s rather than open the setup portal. The WiFi line in the log now
+  shows the channel, transmit power and modes in use.
 - `vb.tls` (Device > Encrypted, on by default): connect on VBand's encrypted port (7386), as the website does. On the
   plaintext port (7385) connections kept stalling: logins went unanswered for minutes, sends to the server blocked for
   seconds, and the connection dropped every minute or two. Takes effect at the next power-on.
