@@ -73,7 +73,25 @@ int adapterSettingFind(const String &key);
 // text) and saves it. Returns the index, or -1 if there's no such key or
 // an empty text value.
 int adapterSettingSet(const String &key, const String &value);
-String adapterSettingValueText(int i);
+
+// One setting as the keyer's menu shows it (keyer_menu.cpp), by the same
+// index. A text setting has type 's' and no range.
+struct AdapterSettingInfo {
+  const char *key;
+  const char *label;
+  char group; // MENU_GROUP_*
+  char type;  // 'b', 'n', 'e' or 's', as above
+  int min, max, step;
+  const char *unit; // for 'e', the options' names, |-separated
+};
+AdapterSettingInfo adapterSettingInfo(int i);
+// A number setting's current value (0 for a text one).
+int adapterSettingValue(int i);
+// How a value reads: "On", "Lobby", "50%", or a text setting's text.
+String adapterSettingShow(int i, int value);
+// A value as keyed or typed (a number, ON / OFF, an option's name or
+// number) into *value; false if it isn't one. Text settings take anything.
+bool adapterSettingParse(int i, const String &token, int *value);
 
 // The 10-minute OTA window closed by itself: VB.OTA reads Off again.
 void adapterSettingOtaWindowEnded();

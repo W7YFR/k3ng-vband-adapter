@@ -86,7 +86,7 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 | `vb.ui` | Off | The VBand transcript on the keyer's USB port (see Transcript): `Off`, `On` (until power-off) or `Always` (saved). In the menu under Display, as "Transcript" |
 
 Three ways to reach them:
-- **Menu:** in command mode, key `/` and pause. Dit (`E`) moves down, dah (`T`) up, `R` opens a group, toggles an on/off setting, runs a command, or starts and saves a change (meanwhile dah raises a number and dit lowers it; in a list of options, dit goes to the next one and dah back, the way rows go), and `B` or `< Back` go back a level (`B` on the top level closes the menu). `X`, the command button, or `< Exit` leave command mode. The VBand group first offers Commands (the ones below) or Settings; each opens the lists that hold them: Commands has Rooms (Who's here first, then a Channel selector) and Device (Connect or Disconnect first); Settings has Rooms, Sound, Display, LED and Device. Running a command shows its answer, then the menu comes back where you were (a paddle touch skips the wait).
+- **Menu:** in command mode, key `/` and pause. Dit (`E`) moves down, dah (`T`) up, `R` opens a group, toggles an on/off setting, runs a command, or starts and saves a change (meanwhile dah raises a number and dit lowers it; in a list of options, dit goes to the next one and dah back, the way rows go), and `B` or `< Back` go back a level (`B` on the top level closes the menu). `X`, the command button, or `< Exit` leave command mode. The VBand group first offers Commands (the ones below) or Settings; each opens the lists that hold them: Commands has Rooms (Who's here first, then a Channel selector) and Device (Connect or Disconnect first); Settings has Rooms, Sound, Display, LED and Device. Running a command shows its answer, then the menu comes back where you were (a paddle touch skips the wait). The VBand group is run by the adapter (below), so a new setting or command shows up with only the adapter updated; if the adapter doesn't answer within 2 s (it's connecting to WiFi, say), the title reads "Adapter busy" and `B` goes back to the keyer's own menu.
 - **Keyed shortcuts:** `/VB LED OFF`, `/KY WPM 22`, `/VB NAME W7YFR`; leave off the value to see the current one, or key just the group (`/VB`) and pause to open its menu.
 - **The keyer's CLI:** `\$` lists everything, `\$ vb` a group, `\$ vb.fade` one setting, `\$ vb.fade 8` sets it (`\$ vb.name Rob W7YFR` keeps your capitals and drops the spaces).
 
@@ -112,10 +112,19 @@ The keyer only offers the settings its build supports (Farnsworth with `FEATURE_
 | keyer -> ESP | `CK,<word>` | Is this a command? |
 | ESP -> keyer | `CR,1` / `CR,0` | Known / unknown |
 | keyer -> ESP | `CMD,<word>` | Run it (sent after leaving command mode) |
-| keyer -> ESP | `SL` / `SL,s` / `SL,a` | List the settings and commands / just the settings / just the commands |
-| ESP -> keyer | `SI,<i>,<group>,<key>,<label>,<type>[,<value>,<min>,<max>,<step>,<unit>]` / `SE,<count>` | One per item (type `b` on/off, `n` number, `e` one of the options named in `<unit>`, separated by bars, `s` text, `a` command), then the end. `<group>` is the keyer menu list it goes in under VBand > Settings or Commands: `R` Rooms, `A` Sound, `D` Display, `L` LED, `H` Device, `-` none (since protocol 2) |
-| keyer -> ESP | `SG,<key>` / `SS,<key>,<value>` | Read / set a setting |
-| ESP -> keyer | `SV,<key>,<value>` | Its value (`?` if there's no such setting) |
+| keyer -> ESP | `SL` / `SL,s` / `SL,a` | List the settings and commands / just the settings / just the commands, for the keyer's CLI (`\$ vb`), which prints each as it comes |
+| ESP -> keyer | `SI,<i>,<group>,<key>,<label>,<type>[,<value>,<min>,<max>,<step>,<unit>]` / `SE,<count>` | One per item (type `b` on/off, `n` number, `e` one of the options named in `<unit>`, separated by bars, `s` text, `a` command), then the end. `<group>` is the menu list it goes in under VBand > Settings or Commands: `R` Rooms, `A` Sound, `D` Display, `L` LED, `H` Device, `-` none |
+| keyer -> ESP | `SQ,<key>` / `SQ,<key>,<value>` | Show / set a setting, as keyed (`/VB LED OFF`) or typed (`\$ vb.led off`): the adapter reads the value (a number, `ON` / `OFF`, an option's name or number, or text) |
+| ESP -> keyer | `SA,1,<text>` / `SA,0,<text>` | What happened, ready to show: `Keying: Off`, or `Unknown vb.X`, `Bad value X`, `Not changed` |
+| keyer -> ESP | `MK,O,<columns>,<rows>` | The VBand menu opened, on a screen this size (rows counting the title) |
+| keyer -> ESP | `MK,<key>` | A key in it: `E` down (or the next option / a lower value while one is changed), `T` up, `R` open / toggle / run / save, `B` back or cancel; `P` send the whole screen again; `X` the keyer left the menu |
+| keyer -> ESP | `MW,<text>` | The word keyed for a text setting (empty: cancelled) |
+| ESP -> keyer | `MH,<beep>,<title>` | The top line: the page's title, or a note until the next key (`<beep>` 1: the keyer sounds its error beep) |
+| ESP -> keyer | `MR,<row>,<line>` | A row under it (1 is the first), drawn in full with the `>` or `*` mark in its first column |
+| ESP -> keyer | `MC,<row>,<editing>` | The mark moved to that row (`*` if a value is being changed). Every key is answered with at least this |
+| ESP -> keyer | `MI,<label>` | Key a word for this text setting (answered with `MW`) |
+| ESP -> keyer | `MA` | A command runs: its answer follows, then the keyer asks for the screen again (`MK,P`) |
+| ESP -> keyer | `MX` | Backed out of VBand: the keyer's own menu again |
 
 ## Connection health
 
@@ -296,6 +305,7 @@ pio device monitor -e w7yfr | tee diag-log.txt   # in the keyer's repo
 ## Notes for future changes
 
 Lessons from building this, so they aren't relearned:
+- **The VBand menu follows the keyer's menu rules** (`keyer_menu.cpp`), so the two read as one menu: row 0 is `< Back`; a list opens on row 1, with `< Back` scrolled off the top when the rest fills the screen; options wrap around; only the one of Connect / Disconnect that applies is shown; values read `Name:` then the value, right-aligned; a command shows its answer and comes back to the same row; nothing in the menu transmits. A rule changed on one side is changed on the other.
 - **Don't call `dacWrite()` from an interrupt.** In this core (2.0.17) it redoes the DAC pad setup on every call; at audio rates that starved `loop()` and looked like random hangs. `sidetone.cpp` writes the DAC register directly from IRAM.
 - **Don't trust disabling the timer alarm to stop a tone.** The timer driver re-arms an auto-reload alarm after each interrupt, so a stop can lose the race and leave the tone running. The interrupt checks its own on/off flag.
 - **Time the key line in an interrupt.** Polling it from `loop()` lost whole elements while `ws.sendTXT()` waited on the network.
