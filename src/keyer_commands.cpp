@@ -11,18 +11,15 @@
 #include "vband_settings.h"
 #include "user_tag.h"
 #include "transcript.h"
+#include "keyer_menu.h"
 #include "config.h"
 #include "log.h"
 
 namespace {
 
-// The commands as menu actions, in the list the keyer asks for ("SL").
-struct Action {
-  const char *word;
-  const char *label; // nullptr: not a command but the setting of that key, shown among them
-  char group;        // the keyer's menu list it goes in (MENU_GROUP_*)
-};
-// In menu order; only the one of Connect / Disconnect that applies is listed.
+// The commands as menu actions, in menu order: in the list the keyer asks
+// for ("SL") and the menu (keyer_menu.cpp).
+using Action = KeyerAction;
 const Action ACTIONS[] = {
     {"SEND", nullptr, MENU_GROUP_NONE},
     {"WHO", "Who's here", MENU_GROUP_ROOMS},      {"CHAN", nullptr, MENU_GROUP_ROOMS},
@@ -92,8 +89,36 @@ void sendListItem(int n) {
 String lastTagSent;
 bool linkWasUp = false;
 
-void sendValue(const String &key, int i) {
-  megaLinkSend("SV", key + "," + (i < 0 ? String("?") : adapterSettingValueText(i)));
+// "SQ,<key>[,<value>]": shows or sets one setting, for the keyer's keyed
+// shortcuts and CLI; answered "SA,<1 or 0>,<what happened>", e.g.
+// "SA,1,Keying: Off" or "SA,0,Bad value X".
+void query(const String &fields) {
+  int comma = fields.indexOf(',');
+  String key = comma < 0 ? fields : fields.substring(0, comma);
+  key.trim();
+  int i = adapterSettingFind(key);
+  if (i < 0) {
+    megaLinkSend("SA", "0,Unknown vb." + key);
+    return;
+  }
+  if (comma >= 0) {
+    String token = fields.substring(comma + 1);
+    token.trim();
+    int value = 0;
+    if (!token.length()) {
+      megaLinkSend("SA", "0,Empty value");
+      return;
+    }
+    if (!adapterSettingParse(i, token, &value)) {
+      megaLinkSend("SA", "0,Bad value " + token);
+      return;
+    }
+    if (adapterSettingSet(key, adapterSettingInfo(i).type == 's' ? token : String(value)) < 0) {
+      megaLinkSend("SA", "0,Not changed");
+      return;
+    }
+  }
+  megaLinkSend("SA", String("1,") + adapterSettingInfo(i).label + ": " + adapterSettingShow(i, adapterSettingValue(i)));
 }
 
 String normalize(String word) {
@@ -162,27 +187,38 @@ void runCommand(const String &word) {
 // keyer has left command mode (where it wouldn't show our answer),
 // "CMD,<word>" runs it.
 // Settings: "SL" lists them and the commands ("SI,<i>,..." each, then
-// "SE,<count>"); "SG,<key>" reads one and "SS,<key>,<value>" sets it, both
-// answered "SV,<key>,<value>" ("?" for no such setting).
+// "SE,<count>"), for the keyer's CLI to print; "SQ" shows or sets one (see
+// query()). The menu's frames go to keyer_menu.cpp.
 void onKeyerFrame(const String &type, const String &fields) {
+  if (keyerMenuFrame(type, fields)) return;
   if (type == "CK") {
     megaLinkSend("CR", isKnown(normalize(fields)) ? "1" : "0");
   } else if (type == "CMD") {
     runCommand(normalize(fields));
   } else if (type == "SL") {
     startList(fields);
-  } else if (type == "SG") {
-    String key = normalize(fields);
-    sendValue(key, adapterSettingFind(key));
-  } else if (type == "SS") {
-    int comma = fields.indexOf(',');
-    String key = normalize(comma < 0 ? fields : fields.substring(0, comma));
-    int i = comma < 0 ? -1 : adapterSettingSet(key, fields.substring(comma + 1));
-    sendValue(key, i);
+  } else if (type == "SQ") {
+    query(fields);
   }
 }
 
 }  // namespace
+
+int keyerActionCount() {
+  return ACTION_COUNT;
+}
+
+const KeyerAction &keyerAction(int i) {
+  return ACTIONS[i];
+}
+
+bool keyerActionListed(int i) {
+  return actionListed(ACTIONS[i]);
+}
+
+void keyerCommandRun(const String &word) {
+  runCommand(normalize(word));
+}
 
 void keyerCommandsBegin() {
   megaLinkSetFrameCallback(onKeyerFrame);
@@ -207,6 +243,7 @@ void keyerCommandsLoop() {
     sendingSentMs = millis();
   }
   linkWasUp = linkUp;
+  keyerMenuLoop();
 
   if (listNext < 0 || millis() - lastListFrameMs < LIST_FRAME_SPACING_MS) return;
   lastListFrameMs = millis();

@@ -189,7 +189,43 @@ void adapterSettingOtaWindowEnded() {
   values[(int)AdapterSetting::Ota] = OTA_MODE_OFF;
 }
 
-String adapterSettingValueText(int i) {
+AdapterSettingInfo adapterSettingInfo(int i) {
+  if (i < TEXTS) return {TEXT_KEYS[i], TEXT_LABELS[i], TEXT_GROUPS[i], 's', 0, 0, 0, ""};
+  const Definition &d = DEFINITIONS[i - TEXTS];
+  return {d.key, d.label, d.group, d.type, d.min, d.max, d.step, d.unit};
+}
+
+int adapterSettingValue(int i) {
+  return i < TEXTS ? 0 : valueOf(i - TEXTS);
+}
+
+String adapterSettingShow(int i, int value) {
   if (i < TEXTS) return textValue(i);
-  return String(valueOf(i - TEXTS));
+  const Definition &d = DEFINITIONS[i - TEXTS];
+  if (d.type == 'b') return value ? "On" : "Off";
+  if (d.type == 'n') return String(value) + d.unit;
+  String options = d.unit;
+  int start = 0;
+  for (int n = 0; n < value; n++) {
+    start = options.indexOf('|', start) + 1;
+    if (start == 0) return "?";
+  }
+  int end = options.indexOf('|', start);
+  return options.substring(start, end < 0 ? options.length() : end);
+}
+
+bool adapterSettingParse(int i, const String &token, int *value) {
+  if (i < TEXTS) return true;
+  const Definition &d = DEFINITIONS[i - TEXTS];
+  if (d.type == 'e') {
+    *value = optionIndex(d, token);
+    return *value >= d.min && *value <= d.max;
+  }
+  if (d.type == 'b' && (token.equalsIgnoreCase("ON") || token.equalsIgnoreCase("OFF"))) {
+    *value = token.equalsIgnoreCase("ON") ? 1 : 0;
+    return true;
+  }
+  if (!token.length() || !isDigit(token[0])) return false;
+  *value = token.toInt();
+  return true;
 }

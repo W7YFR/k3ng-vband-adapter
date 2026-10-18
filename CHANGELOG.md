@@ -7,6 +7,15 @@ Builds show their git commit at boot and in `/DIAG`. The keyer link protocol is 
 
 ## Unreleased
 
+### Changed
+- The adapter runs the VBand group of the keyer's menu: the keyer sends each key pressed there (`MK`) and draws the
+  screen sent back (`MH`, `MR`, `MC`; see the README's protocol table), keeping only what's on screen. A new setting
+  or command now shows up in the menu with only the adapter updated, the keyer no longer drops rows past a fixed
+  limit, and it keeps about 770 bytes more RAM free. The menu's pages, rows and rules are as before. Needs the keyer
+  firmware with the same change.
+- Keyed shortcuts and the CLI show or set a setting with one question, `SQ`, answered with a line ready to show
+  (`SA`); the adapter reads the value, now also `ON` / `OFF`. This replaces `SG` / `SS` / `SV`.
+
 ### Added
 - Sending (`vb.send`, first in VBand > Commands): turn it off to practice on the keyer while staying in a room and
   hearing it. Your keying isn't sent to VBand or put in the transcript, the LED stops following it, and the keyer

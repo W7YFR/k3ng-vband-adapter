@@ -17,3 +17,16 @@
 // keyer's menu and CLI.
 void keyerCommandsBegin();
 void keyerCommandsLoop();
+
+// The commands as menu rows (keyer_menu.cpp), in menu order.
+struct KeyerAction {
+  const char *word;
+  const char *label; // nullptr: not a command but the setting of that key, shown among them
+  char group;        // the keyer's menu list it goes in (MENU_GROUP_*)
+};
+int keyerActionCount();
+const KeyerAction &keyerAction(int i);
+// Only the one of Connect / Disconnect that applies is listed.
+bool keyerActionListed(int i);
+// Runs one, as "CMD,<word>" does; it answers with a status screen.
+void keyerCommandRun(const String &word);
