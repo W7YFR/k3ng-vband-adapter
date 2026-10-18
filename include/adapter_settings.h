@@ -22,7 +22,7 @@
 #define MENU_COMMANDS_ROOMS 'r'
 #define MENU_GROUP_DEVICE 'H'
 
-enum class AdapterSetting { Start, Ota, Rx, Join, Volume, Led, Announce, OtaLed, Status, Channel, Tone, Pitch, Fade, Window, Log, Ui, Tls, Count };
+enum class AdapterSetting { Start, Ota, Rx, Join, Volume, Led, Announce, OtaLed, Status, Channel, Tone, Pitch, Fade, Window, Log, Ui, Tls, Phy, Count };
 
 // VB.START: what to do at power-on.
 #define VBAND_START_OFF 0    // stay off VBand until /CON (or a channel is chosen)
@@ -39,6 +39,11 @@ enum class AdapterSetting { Start, Ota, Rx, Join, Volume, Led, Announce, OtaLed,
 #define RX_SHOW_TEXT 0   // decoded text with each sender's tag
 #define RX_SHOW_SENDER 1 // just who's sending (as on no-decode channels)
 #define RX_SHOW_NONE 2   // nothing; audio only
+
+// VB.PHY: which 802.11 modes the WiFi may use (at the next power-on).
+#define WIFI_PHY_BGN 0 // the ESP32's default
+#define WIFI_PHY_BG 1  // no 802.11n: slower rates that fail less on a busy channel
+#define WIFI_PHY_B 2   // 802.11b only: the slowest and sturdiest
 
 // VB.UI: the transcript's live stream to the keyer's USB port.
 #define TRANSCRIPT_LIVE_OFF 0

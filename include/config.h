@@ -54,6 +54,10 @@
 #define VBAND_LOGIN_TIMEOUT_MS 10000
 #define VBAND_ANSWER_TIMEOUT_MS 15000
 
+// With VB.PHY limiting the WiFi's modes, how long to try the saved network
+// in that mode before going back to b/g/n (wifi_setup.cpp).
+#define WIFI_PHY_CONNECT_WAIT_MS 15000
+
 // Defaults for the user name and custom room, both editable in the WiFi
 // config portal and persisted in NVS (see vband_settings.cpp). The name
 // gets a random number appended once, on first boot.

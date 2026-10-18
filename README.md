@@ -81,6 +81,7 @@ A two-way serial link (38400 baud) to the keyer's `Serial2`. Either board can be
 | `vb.win` | 10 s | Channel button: how soon a second press switches channel, 3-30 s |
 | `vb.log` | off | Forward this log to the keyer's USB port (see Diagnostics). Not saved: off at every power-on |
 | `vb.tls` | on | Connect to VBand on its encrypted port (7386, as the website does) rather than the plaintext one (7385), which has stalled and dropped connections. Takes effect at the next power-on. In the menu under Device, as "Encrypted" |
+| `vb.phy` | b/g/n | Which WiFi generations the adapter may use: `b/g/n` (all), `b/g` (no 802.11n) or `b` (802.11b only). Older ones are slower but get through a busy 2.4 GHz channel more often, and VBand needs very little speed. If the router won't take the chosen mode, it falls back to b/g/n after 15 s. Takes effect at the next power-on. In the menu under Device, as "WiFi mode" |
 | `vb.ui` | Off | The VBand transcript on the keyer's USB port (see Transcript): `Off`, `On` (until power-off) or `Always` (saved). In the menu under Display, as "Transcript" |
 
 Three ways to reach them:
