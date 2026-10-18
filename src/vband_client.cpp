@@ -378,7 +378,7 @@ void vbandLoop() {
 }
 
 void vbandSendSpaceMark(unsigned long space, unsigned long mark) {
-  if (!joined) return;
+  if (!joined || !vbandSending()) return;
   // Every element: on the USB port only, not forwarded (it would crowd out the log history).
   Serial.println("TX space=" + String(space) + " mark=" + String(mark));
   bool sent = ws.sendTXT("SM," + String(space) + "," + String(mark));
@@ -489,6 +489,10 @@ void vbandShowRoom() {
     return;
   }
   displayRoom(joinedChannel, roomUsersKnown() ? roomUsersCount() : -1, roomUsersTags());
+}
+
+bool vbandSending() {
+  return adapterSetting(AdapterSetting::Send);
 }
 
 bool vbandIsJoined() {

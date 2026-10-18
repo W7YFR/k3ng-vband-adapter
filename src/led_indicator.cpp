@@ -155,7 +155,8 @@ void ledLoop() {
       updateAnnounce();
       break;
     case Mode::Idle:
-      if (adapterSetting(AdapterSetting::Led)) setLed(keyerKeyDown());
+      // Following the key shows it's going out: not while sending is off.
+      if (adapterSetting(AdapterSetting::Led)) setLed(vbandSending() && keyerKeyDown());
       break;
   }
 }

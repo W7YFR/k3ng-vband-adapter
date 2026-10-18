@@ -48,6 +48,11 @@ void vbandCustomRoomChanged();
 // (including on vbandCycleChannel()) until that confirmation arrives.
 bool vbandIsJoined();
 
+// VB.SEND: our keying goes to VBand (on), or stays here for practice while
+// we still hear the room (off). Stays as set across rooms; not saved, so
+// it's on again at power-on.
+bool vbandSending();
+
 // True from the first join confirmation after connecting until the
 // WebSocket disconnects. Unlike vbandIsJoined(), it stays true while
 // switching channels, so a channel change doesn't look like VBand going

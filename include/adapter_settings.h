@@ -20,9 +20,13 @@
 #define MENU_GROUP_LED 'L'
 // A setting in one of the Commands lists instead: the letter in lower case.
 #define MENU_COMMANDS_ROOMS 'r'
+// A setting directly in VBand > Commands, at the top: a lower-case letter
+// the keyer doesn't know as a list ('c', Commands itself), so it takes it
+// as "no list" in the half it's listed with.
+#define MENU_COMMANDS_TOP 'c'
 #define MENU_GROUP_DEVICE 'H'
 
-enum class AdapterSetting { Start, Ota, Rx, Join, Volume, Led, Announce, OtaLed, Status, Channel, Tone, Pitch, Fade, Window, Log, Ui, Tls, Phy, Count };
+enum class AdapterSetting { Start, Ota, Rx, Join, Volume, Led, Announce, OtaLed, Status, Channel, Tone, Pitch, Fade, Window, Log, Ui, Tls, Phy, Send, Count };
 
 // VB.START: what to do at power-on.
 #define VBAND_START_OFF 0    // stay off VBand until /CON (or a channel is chosen)

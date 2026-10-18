@@ -5,6 +5,7 @@
 #include "vband_client.h"
 #include "sidetone.h"
 #include "ota_updater.h"
+#include "transcript.h"
 #include "log.h"
 #include "config.h"
 
@@ -41,6 +42,8 @@ const Definition DEFINITIONS[] = {
     {"UI", "Transcript", MENU_GROUP_DISPLAY, 'e', 0, 2, 1, "Off|On|Always", TRANSCRIPT_LIVE_OFF},
     {"TLS", "Encrypted", MENU_GROUP_DEVICE, 'b', 0, 1, 1, "", VBAND_TLS_DEFAULT}, // takes effect at the next power-on
     {"PHY", "WiFi mode", MENU_GROUP_DEVICE, 'e', 0, 2, 1, "b/g/n|b/g|b", WIFI_PHY_BGN}, // takes effect at the next power-on
+    // Never saved: on at power-on; stays as set across rooms.
+    {"SEND", "Sending", MENU_COMMANDS_TOP, 'b', 0, 1, 1, "", 1},
 };
 constexpr int NUMBERS = (int)AdapterSetting::Count;
 static_assert(sizeof(DEFINITIONS) / sizeof(DEFINITIONS[0]) == NUMBERS, "one definition per AdapterSetting");
@@ -75,6 +78,7 @@ void apply(int n) {
   if (n == (int)AdapterSetting::Volume) sidetoneSetVolume(values[n]);
   if (n == (int)AdapterSetting::Ota) otaSetMode(values[n]);
   if (n == (int)AdapterSetting::Log) logForwardSet(values[n]);
+  if (n == (int)AdapterSetting::Send) transcriptNotice(values[n] ? "Sending to VBand on" : "Sending to VBand off");
 }
 
 // An option's index from its number or (case-insensitive) name, or -1.
@@ -105,6 +109,7 @@ void adapterSettingsBegin() {
   prefs.end();
   if (values[(int)AdapterSetting::Ota] == OTA_MODE_WINDOW) values[(int)AdapterSetting::Ota] = OTA_MODE_OFF;
   values[(int)AdapterSetting::Log] = 0;
+  values[(int)AdapterSetting::Send] = 1;
   if (values[(int)AdapterSetting::Ui] == TRANSCRIPT_LIVE_ON) values[(int)AdapterSetting::Ui] = TRANSCRIPT_LIVE_OFF;
   values[(int)AdapterSetting::Channel] = 0; // never stored: see valueOf()
 }
@@ -165,7 +170,7 @@ int adapterSettingSet(const String &key, const String &value) {
   }
   if (number == values[n] && n != (int)AdapterSetting::Ota) return i; // OTA: choosing 10min again restarts it
   values[n] = number;
-  if (n != (int)AdapterSetting::Log) { // log forwarding is for now; after a reboot it's off
+  if (n != (int)AdapterSetting::Log && n != (int)AdapterSetting::Send) { // for now only: not saved
     Preferences prefs;
     prefs.begin(NVS_NAMESPACE, false);
     // An OTA window, and the transcript On (not Always), are for now; after a reboot they're off.
